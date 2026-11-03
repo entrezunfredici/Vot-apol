@@ -44,3 +44,17 @@ Chaque `votant` contient `acteurRef` (`PA…`), `mandatRef` (`PM…`), `parDeleg
 4. **Votes par délégation** : `parDelegation` est une information à conserver et à afficher (le député ne vote pas lui-même).
 5. **Référentiels absents** : les identifiants `PO…`, `PA…`, `PM…` n'ont aucun libellé dans ces fichiers.
 6. **Aucun scrutin de l'échantillon n'est d'un autre type que `SPO`** : la classification en catégories (article, amendement, texte, motion) ne peut s'appuyer que sur `titre`, `objet`, `typeMajorite` et `dossierLegislatif` ; elle sera approximative, d'où l'indicateur « à vérifier ».
+
+## Compléments issus du balayage des 8 877 fichiers (2026-10-25)
+
+Ces constats complètent ou corrigent ceux faits sur l'échantillon de 600 fichiers ; le détail et les décisions associées sont dans `docs/algorithmes/ALG-02-normalisation.md`.
+
+- **Types de vote** : `SPO` 8 780, `SPS` 74, `MOC` 23 (l'échantillon ne contenait que des `SPO`).
+- **Dates** : de 2024-10-08 à 2026-10-16, toutes valides.
+- **Les députés sans vote enregistré ne figurent pas dans les données** : seuls les votes exprimés et les non-votants « de fonction » (`MG`, `PSE`, `PAN`) sont listés. L'effectif d'un groupe (`nombreMembresGroupe`) est donc supérieur au nombre de positions enregistrées.
+- **14 scrutins (489 à 501, 1302, 6256) ont des groupes à la référence `PO0`**, non résolue : dans 12 d'entre eux les 12 groupes portent `PO0`.
+- **`nonVotantsVolontaires` d'un groupe doublonne `abstentions`** (égal dans chaque groupe observé) ; ne jamais l'additionner aux autres positions.
+- **Mises au point** : listes d'éléments `null` ou `{votant}` pour `abstentions`, `nonVotants`, `nonVotantsVolontaires` (3 243 lignes au total) ; 163 lignes dans `dysfonctionnement`.
+- **Votes nominatifs** : 1 323 978 au total (pour 580 652, contre 643 533, abstention 75 754, non-votant 24 039).
+- **Identités vérifiées sur les 8 877 scrutins** : pour + contre = suffrages exprimés ; pour + contre + abstentions = votants ; votants nominatifs = `decompteVoix` ; aucun député en double dans un scrutin ; somme des groupes = total pour pour, contre et abstentions (un scrutin à examiner pour les non-votants).
+

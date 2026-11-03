@@ -40,3 +40,4 @@ Tous sont sur l'artboard « Fiche scrutin ». La position majoritaire y est calc
 5. **Données d'exemple fictives** : 11 groupes, 4 812 scrutins, numéros 1248, etc. La source compte 8 877 scrutins et 12 groupes par scrutin dans l'échantillon. Tout chiffre réel devra venir de `meta.json`.
 6. **Couleur des sujets** : les tuiles de sujets de l'accueil gardent des teintes distinctes ; elles ne concernent pas des groupes mais disparaissent avec le report du sujet en P2.
 7. **Version mobile** de la fiche scrutin : non dessinée (un seul composant responsive est prévu au développement).
+8. **Sans vote enregistré** (constat du 2026-10-25, voir ALG-02) : la fiche scrutin parle de « non-votants » ; il faut distinguer les non-votants de fonction (MG, PSE, PAN) des députés sans vote enregistré (effectif moins positions), et afficher les deux. Ventilation par groupe indisponible pour les 14 scrutins dont la référence de groupe est `PO0`.

@@ -1,3 +1,5 @@
+ 
+
 # Spécifications des traitements (algorithmes)
 
 **Règle du projet : aucun traitement n'est codé avant que son algorithme soit écrit, justifié ligne par ligne et validé. Le code suit ensuite cette spécification ligne par ligne.**
@@ -49,17 +51,19 @@ Références aux constats de `docs/analyse-donnees-sources.md`, aux décisions d
 
 ## Index des traitements prévus
 
-| ID | Traitement | Statut |
-|----|------------|--------|
-| ALG-01 | Lecture sécurisée de l'archive (ZIP/dossier, taille, chemins, empreinte) | À rédiger |
-| ALG-02 | Normalisation des valeurs (null / objet / liste, nombres, booléens, dates, positions) | À rédiger |
-| ALG-03 | Calcul de la position majoritaire d'un groupe | [Brouillon](ALG-03-position-majoritaire.md) |
-| ALG-04 | Extraction d'un scrutin (totaux, groupes, votes nominatifs) | À rédiger |
-| ALG-05 | Contrôles de réconciliation (totaux, groupes, nominatif) | À rédiger |
-| ALG-06 | Mises au point (rattachement au groupe, position initiale) | À rédiger |
-| ALG-07 | Import idempotent (UPSERT, détection de changement, journal) | À rédiger |
-| ALG-08 | Classification des scrutins (catégorie, confiance, « à vérifier ») | À rédiger |
-| ALG-09 | Résolution des noms (référentiels groupes et députés) | À rédiger |
-| ALG-10 | Indicateurs de groupe (présence, part de la position majoritaire) | À rédiger |
-| ALG-11 | Export statique (fichiers JSON, déterminisme, limites Cloudflare) | À rédiger |
-| ALG-12 | Garde-fou avant déploiement (changement anormal, écarts nouveaux) | À rédiger |
+| ID     | Traitement                                                                                    | Statut                                     |
+| ------ | --------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| ALG-01 | Lecture sécurisée de l'archive (ZIP/dossier, taille, chemins, empreinte)                    | [Brouillon](ALG-01-lecture-archive.md)      |
+| ALG-02 | Normalisation des valeurs (null / objet / liste, nombres, booléens, dates, positions)        | [Brouillon](ALG-02-normalisation.md)        |
+| ALG-03 | Calcul de la position majoritaire d'un groupe                                                 | [Brouillon](ALG-03-position-majoritaire.md) |
+| ALG-04 | Extraction d'un scrutin (totaux, groupes, votes nominatifs) | [Brouillon](ALG-04-extraction-scrutin.md) |
+| ALG-05 | Contrôles de réconciliation (totaux, groupes, nominatif) | [Brouillon](ALG-05-reconciliation.md) |
+| ALG-06 | Mises au point (rattachement au groupe, position initiale, effectifs corrigés) | [Brouillon](ALG-06-mises-au-point.md) |
+| ALG-07 | Import idempotent (UPSERT, détection de changement, journal) | [Brouillon](ALG-07-import-idempotent.md) |
+| ALG-08 | Classification des scrutins (catégorie, confiance, « à vérifier ») | [Brouillon](ALG-08-classification.md) |
+| ALG-09 | Résolution des noms (référentiels groupes et députés) ; référentiels à inspecter | [Brouillon](ALG-09-resolution-noms.md) |
+| ALG-10 | Indicateurs de groupe (présence, part de la position majoritaire) et comparaison de deux groupes | [Brouillon](ALG-10-indicateurs-groupe.md) |
+| ALG-11 | Export statique (fichiers JSON, déterminisme, limites Cloudflare) | [Brouillon](ALG-11-export-statique.md) |
+| ALG-12 | Garde-fou avant déploiement (changement anormal, écarts nouveaux) | [Brouillon](ALG-12-garde-fou-deploiement.md) |
+| ALG-13 | Téléchargement de l'archive (URL, statut HTTP, taille, fraîcheur, comparaison d'empreinte) | [Brouillon](ALG-13-telechargement.md) |
+| ALG-14 | Vérification indépendante sur fichiers bruts tirés au hasard (garantie 3) | Proposé, à rédiger si accepté |

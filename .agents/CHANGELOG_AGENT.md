@@ -67,3 +67,10 @@
 
 **Ce qui n'est PAS couvert** : rendu visuel non contrôlé dans un navigateur ; fiche groupe, comparateur et statistiques pas encore alignés sur « n sur N ».
 
+### 2026-11-03 — Brouillons des fiches ALG-04 à ALG-13
+
+**Ce qui a été fait** : rédaction des dix fiches restantes dans `docs/algorithmes/` (statut Brouillon, rien n'est validé) et mise à jour de l'index. Les fiches s'appuient sur des mesures faites sur les 8 877 fichiers (scrutin n° 1 : seul écart de non-votants ; 2 389 mises au point rattachables sur 3 243 ; classification des titres par règles : 8 871 sur 8 877 classés, 6 indéterminés par fautes de frappe ; 149 votes enregistrés par scrutin en moyenne ; 652 députés et 13 groupes réels).
+
+**Ce qui n'est PAS couvert** : ALG-09 (référentiels non inspectés, aucune structure vérifiée) ; adresse officielle de l'archive (ALG-13) et modèle du lien officiel des scrutins (ALG-11) inconnus ; aucun code ; ALG-14 (vérification indépendante) seulement proposée.
+
+**Points d'attention** : plusieurs fiches modifient des interfaces (schéma §4 : `rang`, `groupe_rang`, `cause`, `origine`, `etl_version` ; fichiers publics : `deputes.json`, `qualite.json`, `manifeste.json`) et demandent validation. Limite de 20 000 fichiers de Cloudflare atteinte en environ 3 mois si les votes ont un fichier séparé (ALG-11). La valeur « 577 votants par scrutin » de `DECISIONS.md` (décisions en suspens) est inexacte pour le nombre de votes enregistrés.

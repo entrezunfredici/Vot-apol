@@ -49,6 +49,8 @@ Sur plusieurs scrutins, on affiche la répartition brute (par exemple : « sur 1
 
 `E` membres sur `effectif` : membres du groupe ayant exprimé une position. Les non-votants sont indiqués à part (`N`), avec leur cause lorsqu'elle est connue.
 
+**Sans vote enregistré.** La source ne liste pas les députés sans vote : ils n'apparaissent ni comme abstentions ni comme non-votants. Leur nombre se déduit : `effectif − (pour + contre + abstentions + non-votants)`. Il est affiché sous le libellé « Sans vote enregistré », jamais « absents » (la source ne dit pas pourquoi) ni « abstentions ». Les « non-votants » de la source sont uniquement les personnes dont la fonction empêche de voter (membre du gouvernement, président de séance, président de l'Assemblée).
+
 ## Cas limites à tester
 
 | Cas | Résultat attendu |
