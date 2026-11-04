@@ -30,6 +30,42 @@ Deux temps : **A. rattachement** (à l'import, avant écriture) ; **B. effectifs
 - Effectifs corrigés d'un groupe : `p' = p − (nombre de mises au point à effet dont la position initiale est pour) + (nombre dont la position déclarée est pour)` ; même formule pour `c'` et `a'`.
 - `change_resultat` ⇔ `position_corrigee ≠ position_officielle` (le passage de « aucune » à une position, ou l'inverse, compte).
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Deux temps : A (rattachement, à l'import) puis B (effectifs corrigés, à l'export).
+
+```text
+# A. Rattachement (pour chaque scrutin)
+index = { depute_id → (groupe_rang, groupe_id, position) }   # lu dans les votes nominatifs   [1]
+
+pour chaque ligne m de scrutin_mises_au_point (mises au point ET dysfonctionnements):
+    si m.depute_id ∈ index:                                                         [2]
+        m.groupe_rang, m.groupe_id, m.position_initiale = index[m.depute_id]
+        m.statut = "rattachee"                                                      [3]
+        si m.position_declaree = m.position_initiale:   m.effet = "sans_effet"
+        sinon:                                          m.effet = "modifie_position"    [4]
+    sinon:
+        m.statut = "introuvable"        # groupe et position initiale restent NULL, jamais devinés
+
+# B. Effectifs corrigés (à l'export, rien n'est stocké)
+a_effet = { m | m.origine = "mise_au_point" et m.statut = "rattachee"
+                et m.effet = "modifie_position" }                                    [5]
+pour chaque groupe g identifié (groupe_id ≠ NULL) ayant au moins un m dans a_effet:   [6]
+    (p', c', a') = (p, c, a)                           # compteurs officiels
+    pour chaque m dans a_effet du groupe g:                                         [7]
+        si m.position_initiale ∈ {pour, contre, abstention}:  effectif(initiale) −= 1
+        si m.position_declaree ∈ {pour, contre, abstention}:  effectif(déclarée) += 1
+    si p', c' ou a' < 0: erreur de donnée                                           [10]
+    position_officielle = ALG-03(p, c, a)
+    position_corrigee   = ALG-03(p', c', a')                                        [8]
+    change_resultat     = (position_corrigee ≠ position_officielle)                 [9]
+    si change_resultat:
+        afficher "Une mise au point modifie ce résultat pour " + g
+
+retourner (lignes complétées, corrections triées par rang)                          [11]
+```
+
+Formules : `p' = p − #(initiale = pour) + #(déclarée = pour)`, idem pour `c'` et `a'`. Un non-votant (`non_votant`, `non_votant_volontaire`) n'est jamais une position exprimée : on ne l'ajoute pas et on ne le compte pas comme abstention. Exemple : (p, c, a) = (5, 5, 0), un député passe de contre à pour → (6, 4, 0), la position passe de « aucune (égalité) » à « pour » : `change_resultat` = vrai. Les compteurs officiels ne sont jamais modifiés.
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

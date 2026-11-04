@@ -34,6 +34,48 @@ Exclus : lecture sécurisée de l'archive (réutilise ALG-01, voir question 2), 
 - **Résolu** : l'identifiant exact figure dans le référentiel avec les champs requis non vides.
 - **Non résolu** : toute autre situation ; le libellé reste `NULL`, le front affiche « libellé non résolu » avec l'identifiant (`.agents/CONVENTIONS.md`).
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Le référentiel n'est pas encore inspecté : les noms de champs sont à établir.
+
+```text
+# Notations
+organes  = lire_sécurisé(référentiel organes)      # même lecture qu'ALG-01          [1]
+acteurs  = lire_sécurisé(référentiel acteurs)
+refs_g   = { groupe_id ≠ NULL dans les tables de votes }       # identifiants utilisés   [5]
+refs_d   = { depute_id dans les votes et mises au point }
+rapport  = RapportResolution vide
+
+# Groupes
+pour chaque id dans refs_g:
+    si id = "PO0": ignorer                                     # ne désigne aucun organe [11]
+    o = organes[id]
+    si o absent:                                    non résolu                          [9]
+    sinon si plusieurs contenus différents pour id: non résolu, "identifiant_ambigu"    [4]
+    sinon si o n'est pas un groupe parlementaire:   non résolu, "organe_pas_un_groupe"  [6]
+    sinon:
+        libelle = texte(o.libelle) ; sigle = texte(o.sigle)    # NFC, trim, vide → null [2]
+        si libelle vide: non résolu
+        sinon:
+            si groupes[id].libelle existe et ≠ libelle: rapport.noms_modifies += {id, ancien, nouveau}  [8]
+            UPDATE groupes SET libelle, sigle WHERE id = ?                              [7]
+
+# Députés (même schéma)
+pour chaque id dans refs_d:
+    a = acteurs[id]
+    si a présent, unique et nom non vide:
+        UPDATE deputes SET nom = texte(a.nom), prenom = texte(a.prenom) WHERE id = ?    [3, 7]
+    sinon: non résolu                                           # nom = NULL
+
+# Règles absolues
+jamais d'appariement par nom, sigle ou ressemblance ; jamais de création de ligne      [10, 7]
+
+rapport.groupes_resolus + groupes_non_resolus = |refs_g|   ;   idem pour les députés
+journaliser le rapport en entier                                                        [12]
+affichage d'un non résolu : "libellé non résolu (" + id + ")"
+```
+
+Propriété : un nom n'est écrit que si l'identifiant exact (`PO…` ou `PA…`) figure dans le référentiel ; sinon la valeur reste `NULL` et le front l'indique. Cibles connues : 13 groupes et 652 députés référencés.
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

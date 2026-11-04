@@ -28,6 +28,51 @@ Exclus : contrôle du contenu du ZIP (ALG-01), décision de déployer (ALG-12), 
 | `MAX_TENTATIVES` | 3, attentes de 10 s puis 60 s | Absorber une panne brève sans insister auprès d'un service public |
 | `FRAICHEUR_JOURS` | 90 | Avertissement seulement : le Parlement suspend ses travaux jusqu'à plusieurs semaines |
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Un téléchargement douteux ne laisse aucune archive.
+
+```text
+# Notations
+url      = Entrée[url]                      # configuration, jamais en dur
+publiee  = empreinte lue dans meta.json en ligne (null si 404)                    [2]
+
+si url n'est pas en https, contient un mot de passe, ou son hôte ∉ hotes_autorises:
+    statut = "echec" (config_invalide) ; arrêt                                    [1]
+si lecture de meta.json échoue autrement qu'en 404:
+    statut = "echec" (publie_inconnu) ; arrêt                                     [2]
+
+pour tentative = 1 … MAX_TENTATIVES (3):
+    réponse = GET(url, sans cookie ni jeton, TLS vérifié)                         [3]
+    suivre au plus 5 redirections, toutes en https et sur un hôte autorisé        [4]
+        sinon: echec (redirection_refusee)
+    si code = 200:                       sortir de la boucle
+    sinon si code = 429, 5xx ou délai dépassé:  attendre 10 s puis 60 s, recommencer   [5]
+    sinon:                               echec ; arrêt   # 404, 4xx : pas d'insistance
+
+octets = 0 ; h = SHA256 vide
+pour chaque bloc de 1 Mio du flux:                                                [6]
+    octets += |bloc| ; h.mettre_a_jour(bloc) ; écrire dans le temporaire
+    si octets > 200 Mio: supprimer, echec (trop_gros) ; arrêt
+
+si Content-Length présent et ≠ octets:          echec (incomplet)                 [7]
+si octets < 10 Mio:                              echec (trop_petit)               [8]
+si les 4 premiers octets ≠ "PK\\x03\\x04":        echec (pas_un_zip)               [9]
+si Last-Modified absent: avertissement "fraicheur_inconnue"
+sinon si âge > 90 jours: avertissement "archive_ancienne"                         [10]
+
+sha256 = h.résultat
+si fichier(sha256 + ".zip") existe: supprimer le temporaire
+sinon: renommer le temporaire en sha256 + ".zip"                                  [11]
+
+si publiee = sha256:  statut = "inchangee"
+sinon:                statut = "nouvelle"                                         [12]
+écrire provenance.json (url finale, code, en-têtes, sha256, octets, date)         [13]
+
+en cas d'échec à une étape quelconque: supprimer le temporaire, aucune archive conservée   [14]
+```
+
+Propriétés : l'empreinte est celle des octets reçus ; le nom du fichier conservé est son SHA-256 (deux téléchargements identiques = un seul fichier) ; la comparaison se fait avec la version **publiée**, jamais avec le dernier import ; aucune requête hors des hôtes autorisés. Exemples : 503 puis 200 → `nouvelle`, `tentatives = 2` ; page HTML de 5 Ko avec code 200 → `trop_petit`.
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

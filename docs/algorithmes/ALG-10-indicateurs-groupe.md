@@ -57,6 +57,49 @@ Pour une ligne (groupe, scrutin) : `p, c, a, n`, `membres`.
 
 Les tranches B1 à B4 correspondent à `majorite_absolue` (ALG-03) ; B5 au cas contraire. Elles sont disjointes et couvrent toutes les lignes avec position majoritaire. Les seuils 90 et 75 sont des propositions (question 1).
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Aucun score, aucun classement : seulement des effectifs avec leur dénominateur.
+
+```text
+# Notations
+lignes = Data[x]          # lignes (groupe, scrutin) de la sélection : membres, p, c, a, n
+exclus = lignes dont groupe_id est null                                            [1]
+lignes = lignes \ exclus   # compteur : nb_scrutins_exclus_groupe_non_identifie
+par_groupe = regrouper lignes par groupe_id                                        [2]
+
+pour chaque groupe g (trié par libellé, puis identifiant):                         [9]
+    pour chaque ligne l de g:
+        si l.membres ≤ 0 ou un compteur < 0 ou E + n > l.membres: erreur de donnée    [3]
+        E = l.p + l.c + l.a                      # positions exprimées
+        S = l.membres − (E + l.n)                # sans vote enregistré, S ≥ 0
+        (position, raison, m) = ALG-03(l.p, l.c, l.a)                              [4]
+        si position existe:
+            tranche = B1 si m = E
+                      B2 si 100·m ≥ 90·E et m < E
+                      B3 si 100·m ≥ 75·E et 100·m < 90·E
+                      B4 si 2·m > E et 100·m < 75·E
+                      B5 si 2·m ≤ E                                                [8]
+    nb_scrutins   = |lignes de g|                                                  [5]
+    Σ membres, Σ p, Σ c, Σ a, Σ n, Σ S, Σ E                                        [6]
+    scrutins_par_position = compter par (pour, contre, abstention, egalite, aucun_vote_exprime)   [7]
+    afficher "présence : " + ΣE + " sur " + Σmembres + " (" + nb_scrutins + " scrutins)"
+    afficher "position majoritaire : pour " + n_pour + " scrutins, contre " + n_contre + " …"
+
+# Comparaison de deux groupes a et b                                               [10]
+communs = { scrutins où a ET b ont une ligne }
+un_seul = scrutins où un seul des deux est présent                                  # compté à part
+pour chaque scrutin s de communs:                                                   [11]
+    si pos_a(s) et pos_b(s) existent:
+        si pos_a(s) = pos_b(s):  classe = "meme_position"
+        sinon:                   classe = "positions_differentes"
+    sinon:
+        classe = "au_moins_une_sans_position"  avec raison_a(s), raison_b(s)
+    # exemple : A = égalité, B = pour → au_moins_une_sans_position (raison "egalite")
+# les mises au point n'interviennent jamais ici                                     [12]
+```
+
+Relations (entiers) : `Σ p + Σ c + Σ a = exprimes` ; `exprimes + Σ n + Σ S = Σ membres` ; la somme des 5 valeurs de `scrutins_par_position` = `nb_scrutins` ; `meme_position + positions_differentes + au_moins_une_sans_position = scrutins_communs`. Les membres-scrutins s'additionnent (un député présent à 10 scrutins compte 10 fois). Exemple de la fiche : 5 scrutins, 123 membres-scrutins, 94 exprimés, 3 non-votants, 26 sans vote enregistré (94 + 3 + 26 = 123).
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

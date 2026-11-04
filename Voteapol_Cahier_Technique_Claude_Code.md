@@ -167,13 +167,13 @@ Cible : Cloudflare Workers + Static Assets pour Vue et les données JSON (pas de
 voteapol/
   etl/
     pyproject.toml
-    src/etl/
+    src/etl/algos/   # un module alg01_… à alg13_… par fiche, fonctions pures
+    src/etl/io/      # réseau, ZIP, SQLite, fichiers (aucune logique métier)
     tests/
   web/
     package.json
-    src/
-    worker/
-    wrangler.jsonc
+    src/             # pages, components, data (fetch), search, stats, lexique
+    wrangler.jsonc   # assets seuls, aucun code Worker
   db/
     migrations/
   .github/workflows/

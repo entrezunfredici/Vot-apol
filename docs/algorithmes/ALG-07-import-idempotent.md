@@ -26,6 +26,50 @@ Exclus : lecture de l'archive (ALG-01), construction des lignes (ALG-04), contr�
 | `VERSION_SCHEMA_ATTENDUE` | numéro de la dernière migration | La base doit correspondre au schéma que le code attend |
 | Verrou d'écriture | `BEGIN IMMEDIATE` | SQLite n'admet qu'un écrivain ; un second import échoue proprement au lieu d'attendre indéfiniment |
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Unité atomique : un scrutin.
+
+```text
+# Notations
+base      = ouvrir(chemin) avec clés étrangères
+lecture   = Entrée[RapportLecture d'ALG-01]
+journal   = RapportImport vide
+
+si schéma(base) ≠ VERSION_SCHEMA_ATTENDUE:   statut = "echoue" ; arrêt              [1]
+si lecture.statut = "echec":                 statut = "echoue" ; arrêt              [2]
+ajouter une ligne imports (status = "en_cours") et la valider tout de suite        [3]
+
+pour chaque lot L de TAILLE_LOT scrutins (ordre des numéros):
+    démarrer une transaction (BEGIN IMMEDIATE)
+    pour chaque scrutin s du lot:
+        si s a des erreurs (ALG-02, 04, 06):
+            journal.refuses += {id, cause} ; ne rien écrire pour s ; suivant       [4]
+        ancien = lire(scrutins, id = s.id)                                         [5]
+        classe = si ancien absent:                                  "nouveau"
+                 sinon si (hash, etl_version) identiques:           "inchange"
+                 sinon si hash différent:                           "modifie"
+                 sinon:                                             "retraite"      [6]
+        si classe = "inchange":
+            compter ; ne rien écrire (même pas imported_at)                         [7]
+        sinon:
+            INSERT OR IGNORE groupes, deputes vus (sans nom)                        [8]
+            si classe ∈ {modifie, retraite}:
+                champs_modifies = comparer(ancien, s)
+                supprimer les lignes enfants de s (mises au point, votes, groupes, totaux)   [9]
+            UPSERT scrutins ; insérer totaux, groupes, votes, mises au point        [10]
+    valider la transaction                                                          [11]
+    # erreur de base → annuler le lot en cours, "echoue", arrêt
+
+journal.absents = { id ∈ scrutins } \ { id acceptés ou refusés dans cet import }   [13]
+                  # jamais supprimés
+statut = "termine_avec_erreurs" si refuses ≠ ∅ ou lecture.statut = "partiel"
+                                 ou absents ≠ ∅
+         sinon "termine"                                                            [14]
+mettre à jour imports ; écrire import-<id>.json en entier                           [15]
+```
+
+Propriétés : `nouveaux + inchanges + modifies + retraites + refuses = acceptees (ALG-01)` ; rejouer deux fois la même archive donne `inchanges = 8 877` et aucune ligne modifiée ; un scrutin modifié est entièrement réécrit (aucun député résiduel) ; une donnée valide n'est jamais remplacée par une donnée refusée. `--dry-run` exécute les mêmes comparaisons sans rien écrire (`simulation`) [16].
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

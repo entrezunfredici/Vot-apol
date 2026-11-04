@@ -68,6 +68,65 @@ Tables de vocabulaire (fermées) :
 | `causePositionVote` | `MG`, `PSE`, `PAN` (conservés tels quels) |
 | `positionMajoritaire` (audit uniquement) | `pour`, `contre`, `abstention` ; autre valeur → conservée telle quelle avec avertissement (le champ n'est jamais affiché) |
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie à l'étape du tableau « assemblage », `N1`…`N9` aux fonctions de base. Le tableau fait foi.
+
+```text
+# Notations
+doc        = Entrée[document]                # {"scrutin": {...}} issu d'ALG-01
+s          = doc["scrutin"]
+erreurs    = liste vide ; avertissements = liste vide
+
+# 1. Identité et nature
+id, numero, legislature  = N5(s.uid), N1(s.numero), N1(s.legislature)
+date_scrutin             = N4(s.dateScrutin)
+organe_ref               = N6(s.organeRef, "PO")
+type_vote_code           = N7(s.typeVote.codeTypeVote, {SPO, SPS, MOC})
+sort_code                = N7(s.sort.code, {"adopté": "adopte", "rejeté": "rejete"})
+si s.modePublicationDesVotes ≠ "DecompteNominatif":
+    erreur "mode_publication_non_gere"                                      [9]
+
+# 2. Totaux officiels (aucun calcul)
+pour, contre, abstentions, non_votants = N1(s.syntheseVote.decompte.*)      [10]
+
+# 3. Groupes
+groupes = mettre_en_liste(s.ventilationVotes.organe.groupes.groupe)         [11]
+si groupes est vide: erreur "aucun_groupe"
+pour chaque groupe g, de rang r = 1, 2, … (ordre du fichier):
+    ref = N6(g.organeRef, "PO")
+    si ref = "PO0": g.organe_ref = null ; avertissement "groupe_non_identifie"  [13]
+    membres = N1(g.nombreMembresGroupe)
+    compteurs = N1(g.vote.decompteVoix.{pour, contre, abstentions, nonVotants})
+    # nonVotantsVolontaires est lu et validé, jamais stocké (doublon d'abstentions)
+
+    # 4. Votes nominatifs du groupe
+    pour chaque (clé_source, position) de la table « decompteNominatif »:
+        pour chaque votant v dans N9(g.vote.decompteNominatif[clé_source]):
+            acteur_ref = N6(v.acteurRef, "PA") ; mandat_ref = N6(v.mandatRef, "PM")
+            par_delegation = N3(v.parDelegation)
+            si position = "non_votant":
+                cause = N7(v.causePositionVote, {MG, PSE, PAN})             [18]
+            sinon si v.causePositionVote existe: erreur "cause_incoherente"
+    trier les votants par (position, acteur_ref)                            [19]
+
+si un acteur_ref apparaît deux fois dans le scrutin: erreur "depute_en_double"   [20]
+
+# 5. Mises au point et dysfonctionnements
+pour chaque clé de miseAuPoint (pours, contres, abstentions, nonVotants, nonVotantsVolontaires):
+    lignes += N9(...) avec la position de la table « miseAuPoint »          [21]
+pour chaque clé de miseAuPoint.dysfonctionnement:
+    lignes += N9(...) avec origine = "dysfonctionnement"                    [22]
+
+# 6. Bilan
+si erreurs non vide: retourner (erreurs, avertissements)   # jamais de scrutin à moitié normalisé   [23]
+sinon:               retourner (ScrutinNormalise, avertissements)           [24]
+```
+
+Relations à retenir :
+- Après normalisation, `|votants listés du groupe pour une position| = compteur de decompteVoix` : ALG-02 produit les deux grandeurs, ALG-05 les compare.
+- `sans_vote_enregistre(groupe) = membres − (pour + contre + abstentions + non_votants) ≥ 0` : jamais appelé « absents ».
+- Deux normalisations du même document donnent la même sortie (ordre fixé).
+
 ## Algorithme (assemblage d'un scrutin)
 | # | Étape | Justification |
 |---|-------|---------------|

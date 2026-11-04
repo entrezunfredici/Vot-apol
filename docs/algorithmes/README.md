@@ -29,6 +29,9 @@ Champs, types, valeurs possibles, provenance (fichier, champ source).
 ## Définitions et formules
 Symboles, formules mathématiques, avec leur justification.
 
+## Algorithme logique (vue d'ensemble)
+Pseudo-code en langage naturel (notations, si/sinon, boucles, formules), avec le numéro [k] de l'étape détaillée correspondante. Le tableau qui suit fait foi.
+
 ## Algorithme
 | # | Étape (pseudo-code) | Justification |
 |---|---------------------|---------------|

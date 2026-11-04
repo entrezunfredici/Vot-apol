@@ -60,6 +60,60 @@ Sévérité : **B** → `bloquer` ; **V** → `attente_validation` ; **A** → a
 | A02 | Le nombre de scrutins `indetermine` (ALG-08) a augmenté | A |
 | A03 | ALG-11 a produit un avertissement de taille ou de nombre de fichiers | A |
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Fonction pure : elle ne lit que des rapports.
+
+```text
+# Notations
+rapports = Entrée[telechargement, lecture, import, reconciliation, export, tests_ok]
+prec     = manifeste_precedent (absent si aucune publication)
+cour     = manifeste_courant
+raisons  = liste vide
+
+si rapports.telechargement.sha256 = empreinte de la version publiée et non forcer:
+    decision = "rien_a_faire" ; arrêt                                              [1]
+
+# Règles bloquantes (B)
+pour chaque règle G01 … G05:                                                       [2]
+    G01 : téléchargement échoué, ou lecture "echec" / "partiel"
+    G02 : import "echoue", "interrompu" ou "termine_avec_erreurs"
+    G03 : réconciliation "ecarts_nouveaux"
+    G04 : export "echec"
+    G05 : tests_ok = faux
+    si vraie: raisons.ajouter(règle)
+si raisons non vide:  decision = "bloquer" ; arrêt   # toutes les raisons sont données
+
+# Différences avec la version publiée
+diff = { nouveaux      = ids(cour) \ ids(prec),
+         supprimes     = ids(prec) \ ids(cour),
+         modifies_chiffres = { id | empreinte_chiffres(cour, id) ≠ empreinte_chiffres(prec, id) },
+         modifies_autres   = { id | source_hash différent mais empreinte_chiffres égale } }   [3]
+
+# Règles de validation (V)
+V00 mode_sur actif ; V01 prec absent ; V02 supprimes ≠ ∅ ou scrutins absents de l'archive
+V03 modifies_chiffres ≠ ∅
+V04 |modifies_autres| + |modifies_chiffres| > 20
+V05 |nouveaux| > 500
+V06 noms modifiés (ALG-09) ; V07 nombre de groupes différent ; V08 forcer actif       [4]
+
+si au moins une V est vraie:  decision = "attente_validation"
+sinon:                        decision = "publier"                                  [5]
+
+joindre les avertissements A01 … A03 aux raisons (sans effet sur la décision)       [6]
+rapport_sha256 = SHA256(decision.json canonique)                                    [7]
+
+si decision = "attente_validation": déploiement dans un travail distinct,
+    exigeant l'approbation d'un relecteur, sur l'artefact de CETTE exécution        [8]
+si decision ∈ {"publier", approuvée}:
+    déployer l'artefact ; relire meta.json en ligne ;
+    si archive_sha256 ou nombre de scrutins diffère: échec de déploiement          [9]
+en cas d'échec: ne rien déployer, conserver la version publiée                     [10]
+
+affichage: "décision : " + decision + " (" + raisons + ")"
+```
+
+Propriétés : une règle B vraie impose `bloquer` quelles que soient les autres ; `publier` n'est retourné que si aucune règle B ni V n'est vraie ; une validation humaine ne lève jamais un blocage. Exemples : 12 nouveaux scrutins, tout ok, mode sûr inactif → `publier` ; un `pour` modifié sur un scrutin publié → `attente_validation` (V03) ; écart de réconciliation nouveau → `bloquer` (G03) même si V03 est vraie.
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

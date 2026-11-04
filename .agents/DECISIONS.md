@@ -111,10 +111,32 @@ Sur plusieurs scrutins : afficher la répartition brute (nombre de scrutins par 
 
 ---
 
+### [2026-11-04] Licence du code : MIT
+**Contexte** : Le dépôt devait être ouvert (transparence du traitement des données politiques).
+**Décision** : Le **code** est sous licence MIT (fichier `LICENSE`). Les **données** gardent leur licence d'origine (Assemblée nationale, open data) : attribution et conditions à rappeler dans `docs/methodology.md` et le pied de page du site.
+**Alternative écartée** : Licence copyleft (GPL/AGPL) : contraignante pour des réutilisateurs sans bénéfice pour ce projet.
+**Conséquences** : Licence exacte des données **à vérifier** sur la page source avant publication (supposée Licence Ouverte Etalab 2.0, non confirmée).
+
+---
+
+### [2026-11-04] Recherche côté navigateur : MiniSearch (provisoire)
+**Contexte** : Environ 8 900 scrutins à rechercher par titre, avec filtres date/catégorie/résultat, dans un site statique (SPA Vue).
+**Décision** : MiniSearch, derrière une petite interface `search(query, filtres)` pour pouvoir le remplacer. Poids réel de l'index mesuré après le premier export (phase A).
+**Alternative écartée** : Pagefind, conçu pour indexer des pages HTML et mal adapté à une SPA alimentée par JSON.
+**Conséquences** : Seuil de bascule : si l'index dépasse environ 1 Mo compressé, découpage par année ou passage à Pagefind. L'index doit rester généré par l'ETL (ALG-11).
+
+---
+
+### [2026-11-04] Architecture du code : algos purs, I/O isolées, front sans Worker
+**Contexte** : 13 fiches ALG à coder, et un hébergement gratuit Cloudflare sans code serveur.
+**Décision** : ETL en trois couches : `algos/` (un module par fiche, fonctions pures), `io/` (réseau, ZIP, SQLite, fichiers), `pipeline.py` + `cli.py` (seuls à relier les deux). Front Vue 3 + TypeScript + Vite + Tailwind ; `data/` est le seul endroit qui fait `fetch`. Aucun code Worker : `wrangler.jsonc` ne contient que des assets, avec repli SPA. Gestionnaires : uv (Python), npm (web).
+**Alternative écartée** : Dossier `web/worker/` du cahier initial (contredisait la décision « pas d'API ») ; store Pinia (données en lecture seule, composables suffisants).
+**Conséquences** : Tout calcul à la volée côté visiteur doit tenir dans le navigateur à partir des JSON. À revérifier : `not_found_handling: single-page-application` dans la doc Cloudflare avant le premier déploiement.
+
+---
+
 ## Décisions en suspens
 
 | Sujet | Options | Critère de décision |
 |-------|---------|---------------------|
-| Bibliothèque de recherche côté navigateur | MiniSearch (index chargé en mémoire) / Pagefind (index fragmenté, chargé à la demande) | Poids de l'index pour 8 900 scrutins sur mobile ; mesure après la phase A |
 | Format des votes individuels | Dans `scrutins/<id>.json` / fichier voisin chargé à la demande | Taille moyenne d'un scrutin (environ 577 votants) ; limite de 20 000 fichiers |
-| Licence du code | à définir | |

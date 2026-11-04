@@ -45,6 +45,53 @@ Remarques :
 - Les sous-amendements sont classés dans `amendement` (654 titres) ; voir question 2.
 - Les titres couverts par R1 à R7 totalisent 8 848 ; avec M0 (23) et les 6 indéterminés on retrouve 8 877.
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Fonction pure, sans stockage.
+
+```text
+# Notations
+scrutin = Data[x]                       # id, type_vote_code, titre
+titre   = scrutin.titre
+corrections = Data[table de corrections]
+
+si ∃ correction c avec c.id = scrutin.id:                                           [1]
+    si c.titre = titre:
+        retourner (c.categorie, "correction_manuelle", confiance "haute", a_verifier = faux)
+    sinon:
+        avertissement "correction_obsolete"                    # on continue
+
+si scrutin.type_vote_code = "MOC":                                                  [2]
+    categorie = "motion_censure" ; méthode = "metadonnee_officielle" ; a_verifier = faux
+    si "motion de censure" ∉ normaliser(titre):
+        avertissement "incoherence_metadonnee" ; a_verifier = vrai
+    retourner
+
+t = normaliser(titre)    # NFC, minuscules, ’ → ', espaces réduits                  [3]
+
+correspondances = { règle ∈ (R1, …, R7) | t correspond à règle.expression }         [4]
+categories      = { règle.categorie | règle ∈ correspondances }
+
+si |categories| ≥ 2:                                                                [5]
+    categorie = "indetermine" ; méthode = "aucune" ; a_verifier = vrai
+    avertissement "regles_en_conflit"
+sinon si |categories| = 1:                                                          [6]
+    categorie = l'unique catégorie ; méthode = "regle_titre"
+    confiance = "moyenne" ; a_verifier = vrai
+sinon:                                                                              [7]
+    categorie = "indetermine" ; méthode = "aucune" ; confiance = "aucune" ; a_verifier = vrai
+
+ajouter version_regles                                                              [8]
+
+# Exemple d'ordre des règles : « l'amendement n° 19 … à l'article 2 … »
+#   R4 (amendement) correspond car ancrée au début ; R5 (article) ne correspond pas
+#   → catégorie unique "amendement"
+affichage:
+    pour categorie = "amendement":  afficher "Vote sur un amendement"
+    pour categorie = "indetermine": afficher "Catégorie non déterminée"
+```
+
+Propriétés : chaque scrutin reçoit exactement une catégorie ; `a_verifier = faux` seulement pour une métadonnée officielle ou une correction manuelle ; les décomptes sur les données réelles sont 7 585 amendements, 936 articles, 240 textes, 58 motions de rejet, 23 motions de censure, 18 procédures, 11 autres, 6 indéterminés (somme 8 877).
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

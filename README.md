@@ -90,4 +90,4 @@ Objectif de 0 € sous quotas gratuits (Cloudflare Workers Static Assets, GitHub
 
 ## Licence et données
 
-Licence du code : à définir. Les données proviennent de l'Assemblée nationale (open data) ; leurs conditions de réutilisation seront rappelées dans `docs/methodology.md`.
+Licence du code : MIT (voir `LICENSE`). Les données proviennent de l'Assemblée nationale (open data) ; leurs conditions de réutilisation seront rappelées dans `docs/methodology.md`.

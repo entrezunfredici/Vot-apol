@@ -57,6 +57,44 @@ Remarques :
 - R13 et R14 ne s'exécutent qu'au niveau `lot` car `non_votants_volontaires` et le doublon ne sont pas stockés (ALG-04).
 - R16 ne se calcule qu'à la fin d'un import complet (ALG-07).
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Le module ne fait que lire et comparer.
+
+```text
+# Notations
+connus   = charger(ecarts_connus.json)         # sinon erreur, arrêt                [1]
+ecarts   = liste vide
+
+pour chaque scrutin s du niveau demandé (lot ou base):                              [2]
+    P, C, A, N = totaux officiels ; X = suffrages exprimés ; V = votants ; R = requis
+    pour chaque contrôle R01 … R17 applicable (tous, sans s'arrêter au premier écart):
+        attendu, obtenu = évaluer(contrôle, s)          # entiers, égalité exacte   [3]
+        si attendu ≠ obtenu:                            # (R10 : p+c+a+n ≤ membres)
+            e = {contrôle, scrutin_id, groupe_rang, attendu, obtenu}                [4]
+            e.connu = (une entrée de connus a le même contrôle, scrutin, rang,
+                       attendu ET obtenu)                                           [5]
+            ecarts.ajouter(e)
+
+# Exemples de contrôles
+R02 : attendu = X       obtenu = P + C
+R03 : attendu = V       obtenu = P + C + A
+R04 : attendu = P       obtenu = Σ p des groupes
+R09 : pour chaque groupe g et position q ∈ {pour, contre, abstention, non_votant}:
+          attendu = compteur(g, q)   obtenu = nombre de lignes de vote(g, q)
+R11 : attendu = (sort = adopté)   obtenu = (P ≥ R)
+
+pour chaque entrée de connus jamais rencontrée:
+    avertissement "ecart_connu_disparu"                                             [6]
+
+# Statut global
+si ∃ écart de sévérité B avec connu = faux:   statut = "ecarts_nouveaux"            [7]
+sinon si ∃ écart (connu):                     statut = "ecarts_connus"
+sinon:                                        statut = "ok"
+journaliser le rapport complet ; ne rien modifier                                   [8]
+```
+
+Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p = P`, `Σ c = C`, `Σ a = A`, `Σ n = N` ; `l_q = compteur_q` pour chaque groupe et position ; `p + c + a + n ≤ membres` ; `adopté ⇔ P ≥ R`. Un défaut unique (un `pour` modifié) fait apparaître plusieurs écarts distincts (R02, R04, R08), ce qui aide à le localiser. Une base vide n'est jamais `ok`.
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

@@ -34,6 +34,84 @@ Exclus : le téléchargement (statut HTTP, taille, fraîcheur, URL : fiche à cr
 - Empreinte d'une entrée : SHA-256 des octets bruts du fichier.
 - Empreinte de l'archive : pour un ZIP, SHA-256 des octets du fichier ZIP ; pour un dossier, SHA-256 du manifeste (une ligne `nom<TAB>sha256_fichier` par entrée acceptée ou refusée dont le contenu a pu être lu, triée par nom, terminée par `\n`).
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; les numéros entre crochets renvoient aux étapes détaillées du tableau suivant, qui fait foi.
+
+```text
+# Notations
+source        = Entrée[source]                  # chemin d'un ZIP ou d'un dossier
+L             = Entrée[legislature]             # 17 par défaut
+motif(n)      = "json/VTANR5L" + L + "V" + n + ".json"
+rapport       = RapportLecture vide
+acceptees     = liste vide
+
+# 1. La source est-elle exploitable ?
+si source n'existe pas ou n'est ni fichier ni dossier:
+    rapport.statut = "echec" ; arrêt                                   [1]
+
+# 2. Empreinte et ouverture (une seule ouverture du fichier)
+si source est un ZIP:
+    rapport.empreinte_archive = SHA256(octets de source)               [2-3]
+    si le ZIP est invalide ou a trop d'entrées ou un nom en double
+       ou une taille déclarée totale > MAX_OCTETS_TOTAL:
+        rapport.statut = "echec" ; arrêt                               [4-7]
+sinon (dossier):
+    parcourir source/json sans suivre les liens symboliques            [8]
+
+# 3. Examen de chaque entrée, par ordre alphabétique
+pour chaque entrée e:
+    si e est un dossier:
+        rapport.ignorees += 1                                          [9]
+    sinon si nom(e) est dangereux (.., \, /début, lecteur, contrôle):
+        refuser(e, "nom_dangereux")                                    [10]
+    sinon si nom(e) ne correspond pas à motif(n):
+        refuser(e, "hors_motif")                                       [11]
+    sinon si législature du nom ≠ L:
+        refuser(e, "legislature_inattendue")                           [11]
+    sinon si e chiffrée, de méthode inconnue ou lien symbolique:
+        refuser(e, "nom_non_supporte")                                 [12]
+    sinon:
+        octets = lire(e) en plafonnant à MAX_OCTETS_ENTREE + 1         [13]
+        si la lecture échoue (CRC, flux):
+            refuser(e, "corrompue")                                    [14]
+        sinon si |octets| > MAX_OCTETS_ENTREE
+             ou |octets| ≠ taille déclarée
+             ou |octets| / taille compressée > MAX_RATIO:
+            refuser(e, "taille")                                       [13]
+        sinon:
+            rapport.octets_lus += |octets|
+            si rapport.octets_lus > MAX_OCTETS_TOTAL:
+                rapport.statut = "echec" ; arrêt                       [15]
+            texte = décoder_UTF8_strict(octets)         # sinon refuser(e, "encodage")      [16]
+            doc   = parser_JSON(texte)                  # sinon refuser(e, "json_invalide") [17]
+            si doc n'est pas exactement {"scrutin": {...}}:
+                refuser(e, "structure")                                [18]
+            sinon si doc.scrutin.uid ≠ nom(e) sans extension
+                  ou doc.scrutin.legislature ≠ str(L):
+                refuser(e, "identite")                                 [19]
+            sinon:
+                acceptees.ajouter({nom, n, SHA256(octets), |octets|, doc})   [20]
+
+# 4. Bilan
+acceptees   = trier par n croissant                                    [21]
+numero_min  = min(n) ; numero_max = max(n)
+trous       = { k dans [numero_min .. numero_max] | k absent de acceptees }
+si source est un dossier:
+    rapport.empreinte_archive = SHA256(manifeste trié "nom<TAB>sha256")  [22]
+
+si une entrée au motif admis a été refusée:   rapport.statut = "partiel"   [23]
+sinon si acceptees est vide:                  rapport.statut = "echec"
+sinon:                                        rapport.statut = "complet"
+si trous non vide ou numero_min ≠ 1:          rapport.avertissements += "numérotation discontinue"  [24]
+
+retourner (acceptees, rapport)                                         [25]
+```
+
+Relations mathématiques à retenir :
+- `acceptees + refusees + ignorees = entrees_vues` (chaque entrée finit dans exactement une catégorie).
+- `trous = {numero_min..numero_max} \ {numéros des acceptées}` : un scrutin manquant n'est jamais passé sous silence.
+- Cas des données réelles : `{1..8877}` entièrement acceptés → `trous = ∅`, `statut = complet`.
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

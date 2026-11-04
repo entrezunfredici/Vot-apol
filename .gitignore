@@ -1,1 +1,13 @@
 Scrutins.json
+# Données et artefacts générés
+data/
+dist-data/
+*.sqlite
+*.zip
+node_modules/
+web/dist/
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.wrangler/

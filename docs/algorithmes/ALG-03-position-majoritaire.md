@@ -14,6 +14,47 @@ Déterminer, pour un groupe et un scrutin, la position la plus fréquente parmi 
 - m = max(P, C, A).
 - majorité absolue ⇔ 2·m > E. Calcul en entiers pour éviter tout arrondi flottant.
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi.
+
+```text
+# Notations
+groupe = Data[x]                       # un groupe d'un scrutin, après ALG-02
+P = groupe.decompteVoix.pour
+C = groupe.decompteVoix.contre
+A = groupe.decompteVoix.abstentions
+# nonVotants et nonVotantsVolontaires ne servent pas (une absence n'est pas une position)
+
+si P, C ou A est absent, négatif ou non entier:
+    erreur de donnée ; arrêt                                              [2]
+
+E = P + C + A                          # positions exprimées              [3]
+
+si E = 0:
+    position = "aucune" ; raison = "aucun_vote_exprime" ; m = 0           [4]
+sinon:
+    m = max(P, C, A)                                                      [5]
+    N = nombre de positions parmi (P, C, A) égales à m                    [6]
+    si N > 1:
+        position = "aucune" ; raison = "egalite"                          [7]
+    sinon:
+        position = la position dont l'effectif vaut m                     [8]
+    majorite_absolue = (2 × m > E)                                        [9]
+
+affichage:
+    pour position = "pour":       afficher groupe + " a voté pour (" + m + " sur " + E + ")"
+    pour position = "contre":     afficher groupe + " a voté contre (" + m + " sur " + E + ")"
+    pour position = "abstention": afficher groupe + " s'est abstenu (" + m + " sur " + E + ")"
+    pour position = "aucune":     afficher groupe + " : pas de position majoritaire (" + raison + ")"
+    si position ≠ "aucune" et non majorite_absolue:
+        ajouter " — majorité relative"
+
+position_majoritaire_source = groupe.vote.positionMajoritaire             [10]
+    # conservée pour audit, jamais utilisée ni affichée
+```
+
+Formules : `E = P + C + A` ; `m = max(P, C, A)` ; majorité absolue ⇔ `2m > E` (entiers, aucun flottant). Exemple : P=3, C=2, A=2 → E=7, m=3, `2×3 = 6 > 7` faux → « pour, majorité relative ».
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

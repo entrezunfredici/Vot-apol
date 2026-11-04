@@ -46,6 +46,53 @@ Exclus : lecture de l'archive (ALG-01), conversion des valeurs (ALG-02), positio
 - `groupe_rang` est le rang 1..n du groupe dans le fichier source (ALG-02, étape 12).
 - `par_delegation` est stocké en 0/1 (le cahier prévoit un entier).
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. La fonction est pure : aucune écriture, aucune horloge.
+
+```text
+# Notations
+s       = Entrée[scrutin]               # ScrutinNormalise (ALG-02)
+entree  = Entrée[{nom, sha256_fichier}] # sortie d'ALG-01
+lot     = LotScrutin vide
+
+si nom(entree) sans extension ≠ s.id:
+    erreur "identite" ; arrêt                                             [1]
+
+# 1. Une ligne par table « scrutin »
+lot.scrutins        = { s.id, s.numero, …, source_hash = entree.sha256_fichier,
+                        imported_at = importe_le, etl_version }            [2]
+lot.scrutin_totals  = { s.pour, s.contre, s.abstentions, s.non_votants,
+                        s.suffrages_exprimes, s.nombre_votants }           [3]
+
+# 2. Groupes, puis votes individuels
+pour chaque groupe g de rang r:                                           [4]
+    lot.scrutin_group_votes += { rang = r, groupe_id = g.organe_ref (ou null),
+                                 membres, pour, contre, abstentions, non_votants,
+                                 position_majoritaire_source }
+    pour chaque votant v de g:                                            [5]
+        lot.scrutin_individual_votes += { depute_id = v.acteur_ref, groupe_rang = r,
+                                          groupe_id = g.organe_ref, mandat_id, position,
+                                          par_delegation (0/1), cause }
+
+# 3. Mises au point (rattachement laissé à ALG-06)
+pour chaque ligne m de mises_au_point + dysfonctionnements:               [6]
+    lot.scrutin_mises_au_point += { depute_id, origine, position_declaree,
+                                    par_delegation, groupe_rang = NULL,
+                                    groupe_id = NULL, position_initiale = NULL }
+
+# 4. Contrôles et dérivés
+si une clé est dupliquée (rang, depute_id des votes, depute_id des mises au point):
+    erreur "cle_dupliquee"                                                [7]
+lot.groupes_vus  = groupes non nuls, distincts, triés
+lot.deputes_vus  = députés des votes ET des mises au point, distincts, triés   [8]
+lot.comptages    = nombre de lignes produites par (groupe, position) puis par position   [9]
+                   # compté sur les lignes produites, pas sur les compteurs source
+
+trier chaque table par clé primaire ; retourner lot                       [10]
+```
+
+Relation à retenir : pour chaque groupe et chaque position, `|lignes de vote produites| = compteur de scrutin_group_votes` : ALG-04 fournit les deux grandeurs indépendantes, ALG-05 les compare.
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|

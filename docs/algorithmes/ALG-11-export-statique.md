@@ -52,6 +52,50 @@ Soit **8 922 fichiers au plus** pour les données actuelles, à comparer à la l
 | `MAX_OCTETS_FICHIER_ECHEC` | 20 Mio | La limite est de 25 Mo par fichier ; 20 Mio laisse une marge |
 | `MAX_OCTETS_FICHIER_AVERTISSEMENT` | 1 Mio | Les plus gros fichiers attendus (`groupes/<id>.json`, un fragment d'index) font quelques centaines de Ko : un fichier d'un Mio signale une dérive |
 
+## Algorithme logique (vue d'ensemble)
+Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Rien n'est publié tant que tout n'est pas valide.
+
+```text
+# Notations
+base    = Entrée[base de travail]
+sortie  = Entrée[répertoire_sortie]
+tmp     = répertoire temporaire frère de sortie, vidé                              [2]
+
+si ALG-05(niveau base).statut ∉ {"ok", "ecarts_connus"}: refuser d'exporter        [1]
+si base n'a aucun scrutin: statut = "echec" ; arrêt
+
+pour chaque scrutin s (numéro croissant):                                           [5]
+    categorie  = ALG-08(s)
+    groupes    = pour chaque groupe de s: ALG-03(p, c, a) ; ALG-06 B (correction)   [3]
+    document   = { identité, source, totaux, groupes, votes, mises_au_point }
+    écrire tmp/scrutins/<s.id>.json = sérialiser(document)                          [9]
+
+écrire tmp/scrutins-index/AAAA-MM.json  pour chaque mois ayant des scrutins        [6]
+écrire tmp/scrutins-index.json (liste des fragments)
+écrire tmp/groupes.json, tmp/groupes/<id>.json, tmp/deputes.json                   [4, 5]
+écrire tmp/stats.json = ALG-10 pour chaque groupe et sélection précalculée         [7]
+écrire tmp/manifeste.json, puis tmp/qualite.json et tmp/meta.json                  [8]
+        # aucune heure d'horloge : valeurs lues dans la base
+
+sérialiser(x) = JSON, clés triées, séparateurs ",", ":", UTF-8 sans BOM, "\n" final   [9]
+
+pour chaque fichier f de tmp:                                                       [10]
+    f doit se relire en JSON ET respecter son schéma (docs/data-dictionary.md)
+si nombre de fichiers > 19 000 ou un fichier > 20 Mio: statut = "echec"            [11]
+    # avertissements à 15 000 fichiers ou 1 Mio
+si une ligne d'index n'a pas de fichier, ou un groupe_id / depute_id est inconnu    [12]
+   ou meta ≠ comptes de la base: statut = "echec"
+comparer un échantillon de fichiers aux lignes de la base                           [13]
+
+si statut ≠ "echec":                                                                [14]
+    remplacer sortie par tmp (renommage)
+sinon:
+    supprimer tmp ; conserver l'ancien sortie intact
+retourner RapportExport (nombre de fichiers, octets, plus gros fichier)             [15]
+```
+
+Propriétés : mêmes entrées → mêmes octets ; un échec laisse la version précédente intacte ; au plus 8 922 fichiers aujourd'hui pour 20 000 autorisés ; aucun champ de couleur, de rang de groupe ou de score. Exemple : `VTANR5L17V489` produit 12 groupes avec `groupe_id = null`, `ventilation_disponible = faux` et `sans_vote_enregistre = null`.
+
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|
