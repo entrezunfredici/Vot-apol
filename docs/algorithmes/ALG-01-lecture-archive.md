@@ -1,5 +1,5 @@
 # ALG-01 — Lecture sécurisée de l'archive des scrutins
-Statut : Brouillon    Version : 1    Date : 2026-10-25
+Statut : Validé    Version : 2    Date : 2026-11-11
 
 ## But
 Lire l'archive des scrutins (fichier ZIP ou dossier déjà extrait) en ne laissant passer que des fichiers JSON de scrutin conformes, sans jamais écrire sur le disque, et produire une empreinte de l'archive ainsi qu'un rapport de lecture exact (ce qui a été lu, refusé, ignoré, et pourquoi).
@@ -18,7 +18,7 @@ Exclus : le téléchargement (statut HTTP, taille, fraîcheur, URL : fiche à cr
 - Entrées : `source` (chemin d'un `.zip` ou d'un dossier contenant `json/`), `legislature` attendue (entier, 17 par défaut), paramètres de limites (ci-dessous).
 - Sorties :
   1. flux d'entrées acceptées, triées par numéro de scrutin croissant : `{nom, numero, sha256_fichier, octets_bruts, document_json}` ;
-  2. `RapportLecture` : `type_source` (`zip` | `dossier`), `empreinte_archive`, `type_empreinte` (`fichier` | `manifeste`), `entrees_vues`, `acceptees`, `ignorees` (entrées de dossier), `refusees` (liste `{nom, motif}`), `octets_lus`, `numero_min`, `numero_max`, `trous` (numéros absents entre min et max), `avertissements`, `statut` (`complet` | `partiel` | `echec`).
+  2. `RapportLecture` : `type_source` (`zip` | `dossier`), `empreinte_archive`, `type_empreinte` (`fichier` | `manifeste`), `entrees_vues`, `acceptees`, `ignorees` (entrées de dossier), `refusees` (liste `{nom, motif}`), `octets_lus`, `numero_min`, `numero_max`, `trous` (numéros absents entre min et max), `avertissements`, `statut` (`complet` | `partiel` | `echec`), `motif_echec` (`source_introuvable`, `zip_invalide`, `trop_d_entrees`, `nom_en_double`, `taille_declaree_excessive`, `octets_totaux_excessifs`, `aucune_entree_acceptee`, sinon vide), `liens_symboliques_ignores` (compteur à part, hors `entrees_vues`).
 
 ## Paramètres (valeurs proposées et justification)
 | Paramètre | Valeur | Justification |
@@ -174,15 +174,17 @@ Relations mathématiques à retenir :
 - Aucune écriture sur le disque, aucun accès réseau pendant la lecture.
 - Deux lectures de la même source produisent la même empreinte et le même flux (déterminisme).
 
-## Questions à trancher avant de coder
-1. **Valeurs des limites** : `MAX_RATIO` surtout, à calibrer sur le vrai ZIP. OK pour les autres ?
-2. **Entrée refusée = publication bloquée ?** Cette fiche le prévoit (`partiel`, voir ALG-12). Alternative moins stricte : publier avec avertissement. Je recommande la rigueur.
-3. **Trou de numérotation** : simple avertissement ici. Doit-il bloquer aussi ? Il faut des données de suppression avant de décider.
-4. **BOM** : refusé aujourd'hui, car jamais observé. Souhaites-tu plutôt l'accepter et le signaler ?
-5. **Téléchargement** : on crée la fiche ALG-13 (URL, statut HTTP, taille minimale et maximale, fraîcheur, empreinte comparée à l'import précédent). Quelle est l'URL officielle de l'archive ?
+## Décisions prises à la validation (2026-11-11)
+Les questions ouvertes du brouillon sont tranchées selon les recommandations de la fiche :
+1. **Limites** : valeurs du tableau « Paramètres » retenues. `MAX_RATIO` = 100 reste à confirmer en mesurant le vrai ZIP dès qu'il est disponible (seul le dossier extrait existe pour l'instant).
+2. **Entrée refusée** : statut `partiel`, publication bloquée (ALG-12).
+3. **Trou de numérotation** : simple avertissement ; réexamen quand on aura des données de suppression.
+4. **BOM** : refusé (`encodage`).
+5. **Téléchargement** : traité dans la fiche ALG-13, hors périmètre ici.
 
 ## Sources et constats
 `docs/analyse-donnees-sources.md`, cahier technique §5.2 (règles 1, 2, 8, 10) et §5.3 (fichier corrompu au milieu de l'archive), `docs/methodology.md` (garanties 2 et 4).
 
 ## Historique
 - v1 (2026-10-25) : première rédaction.
+- v2 (2026-11-11) : validée. Ajout des champs `motif_echec` et `liens_symboliques_ignores` au rapport ; questions ouvertes tranchées.

@@ -74,3 +74,21 @@
 **Ce qui n'est PAS couvert** : ALG-09 (référentiels non inspectés, aucune structure vérifiée) ; adresse officielle de l'archive (ALG-13) et modèle du lien officiel des scrutins (ALG-11) inconnus ; aucun code ; ALG-14 (vérification indépendante) seulement proposée.
 
 **Points d'attention** : plusieurs fiches modifient des interfaces (schéma §4 : `rang`, `groupe_rang`, `cause`, `origine`, `etl_version` ; fichiers publics : `deputes.json`, `qualite.json`, `manifeste.json`) et demandent validation. Limite de 20 000 fichiers de Cloudflare atteinte en environ 3 mois si les votes ont un fichier séparé (ALG-11). La valeur « 577 votants par scrutin » de `DECISIONS.md` (décisions en suspens) est inexacte pour le nombre de votes enregistrés.
+
+### 2026-11-11 — ALG-01 validée et codée
+
+**Ce qui a été fait** : fiche ALG-01 passée en `Validé` (v2 : champs `motif_echec` et `liens_symboliques_ignores`, questions ouvertes tranchées). Code : `etl/src/etl/algos/alg01_archive.py` (commentaires `# ALG-01.k`), lecteurs `etl/src/etl/io/zipfile.py` et `io/dossier.py`, dataclasses dans `models.py`, `pipeline.lire_source`. Tests `etl/tests/algos/test_alg01_archive.py` (fixtures : 3 vrais scrutins).
+
+**Ce qui n'est PAS couvert** : `MAX_RATIO` non calibré sur le vrai ZIP (seul le dossier extrait existe) ; la commande `etl inspect` n'est pas branchée (dépend d'ALG-02/04) ; cas « en-tête annonçant 1 Ko, flux de 100 Mo » non testable avec `zipfile` (il tronque à la taille déclarée, l'écart ressort en `corrompue`).
+
+**Points d'attention** : `lire_archive` renvoie une liste : les 8 877 documents JSON sont tous gardés en mémoire (à surveiller, ou passer en flux si besoin). Le test du nom contenant un antislash est ignoré sous Windows.
+
+### 2026-11-11 — ALG-02 validée et codée
+
+**Ce qui a été fait** : fiche ALG-02 passée en `Validé` (v2, 5 propositions retenues). Code : `etl/src/etl/algos/alg02_normalisation.py` (`normaliser_scrutin`, fonctions N1 à N9, commentaires `# ALG-02.k`), dataclasses dans `models.py` (`ScrutinNormalise`, `GroupeNormalise`, `Votant`, `LigneCorrection`, `Anomalie`, `ResultatNormalisation`). Tests `etl/tests/algos/test_alg02_normalisation.py` (fixtures : scrutins 1, 2, 3, 489, 1017, 1302).
+
+**Vérifié sur les 8 877 scrutins réels** : tous normalisés sans erreur ; 106 524 groupes dont 146 non identifiés ; 1 323 978 votes ; 3 243 mises au point ; 163 dysfonctionnements ; types et résultats conformes à la fiche ; seuls avertissements : 146 `groupe_non_identifie`.
+
+**Ce qui n'est PAS couvert** : mise à jour de `docs/methodology.md` et de la maquette pour « sans vote enregistré » (décision 2 de la fiche) ; contrôles de totaux (ALG-05) ; `etl inspect` non branché.
+
+**Points d'attention** : la normalisation des 8 877 scrutins prend environ 35 s (test d'intégration inclus dans la suite).
