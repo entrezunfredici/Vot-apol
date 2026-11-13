@@ -58,7 +58,7 @@ class SourceZip:
     def empreinte_fichier(self) -> str:
         return self._empreinte
 
-    def lister(self) -> list[EntreeBrute]:
+    def lister(self, plafond: int | None = None) -> list[EntreeBrute]:
         assert self._zip is not None
         entrees: list[EntreeBrute] = []
         for info in self._zip.infolist():

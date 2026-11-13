@@ -65,7 +65,7 @@ Références aux constats de `docs/analyse-donnees-sources.md`, aux décisions d
 | ALG-07 | Import idempotent (UPSERT, détection de changement, journal) | [Brouillon](ALG-07-import-idempotent.md) |
 | ALG-08 | Classification des scrutins (catégorie, confiance, « à vérifier ») | [Brouillon](ALG-08-classification.md) |
 | ALG-09 | Résolution des noms (référentiels groupes et députés) ; référentiels à inspecter | [Brouillon](ALG-09-resolution-noms.md) |
-| ALG-10 | Indicateurs de groupe (présence, part de la position majoritaire) et comparaison de deux groupes | [Brouillon](ALG-10-indicateurs-groupe.md) |
+| ALG-10 | Indicateurs de groupe (participation au vote enregistrée, part de la position majoritaire) et comparaison de deux groupes | [Brouillon](ALG-10-indicateurs-groupe.md) |
 | ALG-11 | Export statique (fichiers JSON, déterminisme, limites Cloudflare) | [Brouillon](ALG-11-export-statique.md) |
 | ALG-12 | Garde-fou avant déploiement (changement anormal, écarts nouveaux) | [Brouillon](ALG-12-garde-fou-deploiement.md) |
 | ALG-13 | Téléchargement de l'archive (URL, statut HTTP, taille, fraîcheur, comparaison d'empreinte) | [Brouillon](ALG-13-telechargement.md) |

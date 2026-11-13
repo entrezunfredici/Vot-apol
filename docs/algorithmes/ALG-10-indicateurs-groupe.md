@@ -1,8 +1,8 @@
-# ALG-10 — Indicateurs de groupe (présence, part de la position majoritaire) et comparaison de deux groupes
+# ALG-10 — Indicateurs de groupe (participation au vote enregistrée, part de la position majoritaire) et comparaison de deux groupes
 Statut : Brouillon    Version : 1    Date : 2026-11-03
 
 ## But
-Calculer, pour un groupe et une sélection de scrutins, les seuls indicateurs autorisés par la décision du 2026-10-22 : la présence au scrutin (`E` sur effectif) et la part de la position majoritaire (`m` sur `E`), toujours sous forme d'effectifs avec leur dénominateur ; et décrire, pour deux groupes, sur quels scrutins ils ont la même position majoritaire. Aucun score, aucun classement, aucune moyenne présentée comme une note.
+Calculer, pour un groupe et une sélection de scrutins, les seuls indicateurs autorisés par la décision du 2026-10-22 : la participation au vote enregistrée (`E` sur effectif) et la part de la position majoritaire (`m` sur `E`), toujours sous forme d'effectifs avec leur dénominateur ; et décrire, pour deux groupes, sur quels scrutins ils ont la même position majoritaire. Aucun score, aucun classement, aucune moyenne présentée comme une note.
 
 ## Périmètre
 Inclus : indicateurs par ligne (groupe, scrutin), agrégation sur une sélection, répartition de la part majoritaire, comparaison de deux groupes.
@@ -41,7 +41,7 @@ Exclus : calcul de la position majoritaire (ALG-03), mises au point (n'entrent d
 ## Définitions
 Pour une ligne (groupe, scrutin) : `p, c, a, n`, `membres`.
 - `E = p + c + a` ; `N = n` ; `S = membres − (E + N)` : **sans vote enregistré** (méthodologie). `S ≥ 0` par ALG-05 R10.
-- Présence : « `E` sur `membres` ». Les non-votants sont affichés à part.
+- Participation au vote enregistrée : « `E` sur `membres` ». **Ce n'est pas une présence physique** : `E` inclut les votes par délégation (`parDelegation = vrai`, 55 lignes sur 1 244 dans les six fixtures). Le libellé affiché doit le dire. Les non-votants sont affichés à part.
 - `m`, position majoritaire, raison d'absence : ALG-03.
 - Part de la position majoritaire : « `m` sur `E` », définie seulement si une position majoritaire existe.
 
@@ -82,7 +82,7 @@ pour chaque groupe g (trié par libellé, puis identifiant):                    
     nb_scrutins   = |lignes de g|                                                  [5]
     Σ membres, Σ p, Σ c, Σ a, Σ n, Σ S, Σ E                                        [6]
     scrutins_par_position = compter par (pour, contre, abstention, egalite, aucun_vote_exprime)   [7]
-    afficher "présence : " + ΣE + " sur " + Σmembres + " (" + nb_scrutins + " scrutins)"
+    afficher "participation au vote enregistrée (délégations incluses) : " + ΣE + " sur " + Σmembres + " (" + nb_scrutins + " scrutins)"
     afficher "position majoritaire : pour " + n_pour + " scrutins, contre " + n_contre + " …"
 
 # Comparaison de deux groupes a et b                                               [10]

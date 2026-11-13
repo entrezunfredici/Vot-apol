@@ -27,7 +27,7 @@ class SourceDossier:
     def empreinte_fichier(self) -> None:
         return None
 
-    def lister(self) -> list[EntreeBrute]:
+    def lister(self, plafond: int | None = None) -> list[EntreeBrute]:
         # ALG-01.8 : parcours en profondeur de source/json, sans suivre de lien symbolique
         entrees: list[EntreeBrute] = []
         base = self._racine / "json"
@@ -38,6 +38,9 @@ class SourceDossier:
             dossier = pile.pop()
             with os.scandir(dossier) as it:
                 for e in it:
+                    # ALG-01.5 : parcours borné ; un dépassement est détecté par l'appelant
+                    if plafond is not None and len(entrees) > plafond:
+                        return entrees
                     nom = e.path
                     relatif = Path(nom).relative_to(self._racine).as_posix()
                     if e.is_symlink():

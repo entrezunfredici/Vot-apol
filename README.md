@@ -2,7 +2,7 @@
 
 Explorateur public des scrutins de l'Assemblée nationale (XVIIe législature) : retrouver un vote, voir comment chaque groupe politique a voté, et remonter à la source officielle.
 
-> **Statut : conception.** Aucun code n'est encore écrit. Ce dépôt contient le cahier technique et la maquette ; tout ce qui est décrit ci-dessous est l'objectif, pas l'existant.
+> **Statut : conception, implémentation commencée.** ALG-01 (lecture de l'archive) et ALG-02 (normalisation) sont codés et testés (`etl/`) ; les autres algorithmes (ALG-03 à ALG-13) n'ont qu'une spécification (`docs/algorithmes/`). Ce dépôt contient aussi le cahier technique et la maquette ; le reste de ce qui est décrit ci-dessous est l'objectif, pas l'existant.
 
 ## Principes
 

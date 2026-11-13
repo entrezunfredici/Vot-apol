@@ -1,5 +1,5 @@
 # ALG-05 — Contrôles de réconciliation (totaux, groupes, nominatif)
-Statut : Brouillon    Version : 1    Date : 2026-11-03
+Statut : Brouillon    Version : 2    Date : 2026-11-13
 
 ## But
 Vérifier, scrutin par scrutin, que les chiffres de la source se recoupent entre eux (totaux, groupes, votes nominatifs, résultat), consigner chaque écart sans jamais le corriger ni le masquer, et distinguer les écarts **connus et validés** des écarts **nouveaux**, qui bloquent la publication (garantie 2).
@@ -9,7 +9,7 @@ Inclus : liste des contrôles, deux niveaux d'exécution (avant écriture, sur l
 Exclus : décision de publier ou de bloquer (ALG-12, qui consomme le rapport), vérification indépendante sur fichiers bruts tirés au hasard (garantie 3 : script distinct du pipeline, voir question 4), calcul de la position majoritaire (ALG-03).
 
 ## Constats (mesurés le 2026-11-03 sur les 8 877 fichiers, 106 524 groupes)
-- Les identités de ALG-02, constat 11, tiennent sur la totalité, **sauf une** : la somme des `nonVotants` des groupes diffère du total dans le scrutin n° 1 (**21 dans les groupes, 10 au total**).
+- Les identités de ALG-02, constat 11, tiennent sur la totalité, **sauf une** : la somme des `nonVotants` des groupes diffère du total dans le scrutin n° 1 (**21 dans les groupes, 10 au total**). Les lignes de vote nominatif de ce scrutin comptent elles aussi 21 non-votants (vérifié sur la fixture `VTANR5L17V1.json` : 10 + 4 + 3 + 3 + 1) : l'écart apparaît donc **deux fois**, en R07 (groupes ≠ total) et en R08 (lignes ≠ total), mais pas en R09 (les groupes sont cohérents avec leurs lignes).
 - Aucun groupe n'a pour + contre + abstentions + non-votants supérieur à `nombreMembresGroupe` (0 sur 106 524).
 - `nonVotantsVolontaires` d'un groupe est égal à `abstentions` dans **les 106 524 groupes** (0 écart ; l'échantillon de 700 scrutins d'ALG-02 est donc confirmé sur la totalité). Le total du scrutin, lui, vaut toujours 0.
 - Le résultat est cohérent avec le seuil : `sort.code = adopté` ⇔ `pour ≥ nbrSuffragesRequis`, sur 8 877 scrutins (0 écart). Et `nbrSuffragesRequis = ⌊suffrages exprimés / 2⌋ + 1` pour tous les scrutins hors motions de censure (0 écart sur 8 854). Une motion de censure est adoptée dans 1 cas sur 23.
@@ -41,7 +41,7 @@ Sévérité : **B** = un écart nouveau bloque ; **I** = écart consigné et aff
 | R05 | `Σ c = C` | lot, base | B | 0 écart |
 | R06 | `Σ a = A` | lot, base | B | 0 écart |
 | R07 | `Σ n = N` | lot, base | B | **1 écart connu** : scrutin n° 1 (21 ≠ 10) |
-| R08 | Pour chaque position, nombre de lignes de vote du scrutin = total (`P`, `C`, `A`, `N`) | lot, base | B | 0 écart |
+| R08 | Pour chaque position, nombre de lignes de vote du scrutin = total (`P`, `C`, `A`, `N`) | lot, base | B | **1 écart connu** : scrutin n° 1, position `non_votant` (21 ≠ 10) ; 0 écart sur les autres positions |
 | R09 | Pour chaque groupe et position : `l_p = p`, `l_c = c`, `l_a = a`, `l_n = n` | lot, base | B | 0 écart (106 524 × 4 comparaisons) |
 | R10 | Pour chaque groupe : `p + c + a + n ≤ membres` | lot, base | B | 0 écart |
 | R11 | `adopté` ⇔ `P ≥ R` | lot, base | B | 0 écart |
@@ -111,8 +111,8 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 ## Cas limites et erreurs
 | Cas | Résultat attendu | Pourquoi |
 |-----|------------------|----------|
-| Scrutin n° 1 : `Σ n = 21`, `N = 10` | écart R07 `connu = vrai`, statut global `ecarts_connus` | constat |
-| Même scrutin, mais `N = 11` | écart R07 `connu = faux` : statut `ecarts_nouveaux` | la valeur obtenue a changé, la validation ne vaut plus |
+| Scrutin n° 1 : `Σ n = 21`, lignes `non_votant` = 21, `N = 10` | deux écarts, R07 et R08, chacun `connu = vrai` ; statut global `ecarts_connus` | constat (R07 et R08 sont indépendants : ils ne doivent pas s'excuser l'un l'autre) |
+| Même scrutin, mais `N = 11` | R07 et R08 `connu = faux` : statut `ecarts_nouveaux` | la valeur attendue a changé, la validation ne vaut plus |
 | Nouveau scrutin avec `P + C ≠ X` | R02 bloquant | étape 7 |
 | Groupe `PO0` | contrôlé comme les autres (les contrôles utilisent le rang, pas l'identifiant) | un groupe non identifié a des totaux exacts |
 | `P + C + A + N > membres` pour un groupe | R10 bloquant | effectif incohérent |
@@ -121,7 +121,7 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 | Plus de 1 000 écarts du même contrôle | les 1 000 premiers détaillés, le total exact conservé | rapport lisible, sans perte du compte |
 
 ## Exemples chiffrés (à reproduire en test)
-- Archive réelle complète : `scrutins_controles = 8 877`, R07 : 1 écart connu (scrutin 1), tous les autres contrôles : 0 écart, statut `ecarts_connus`.
+- Archive réelle complète : `scrutins_controles = 8 877`, R07 : 1 écart connu (scrutin 1), R08 : 1 écart connu (scrutin 1, `non_votant`), tous les autres contrôles : 0 écart, statut `ecarts_connus` (2 écarts connus au total).
 - Scrutin construit en test à partir d'un vrai fichier dont on modifie `pour` de 1 : R02, R04 et R08 en écart (trois contrôles distincts pour un même défaut) ; `connu = faux`.
 
 ## Invariants vérifiés
@@ -130,7 +130,7 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 - Le module ne comporte aucune opération d'écriture sur la base.
 
 ## Questions à trancher avant de coder
-1. **Écart du scrutin n° 1** (21 non-votants dans les groupes pour 10 au total) : on l'inscrit dans les écarts connus après examen du fichier. Je propose d'ouvrir le fichier avec toi avant de le valider ; je n'ai pas cherché d'explication.
+1. **Écart du scrutin n° 1** (21 non-votants dans les groupes et dans les lignes nominatives pour 10 au total) : on inscrit **deux** entrées (R07 et R08) dans les écarts connus après examen du fichier. Je propose d'ouvrir le fichier avec toi avant de le valider ; je n'ai pas cherché d'explication.
 2. **R12 informatif ou bloquant ?** Je le propose informatif (règle de droit, hors périmètre du projet).
 3. **R14 bloquant ?** Le doublon `nonVotantsVolontaires` = `abstentions` est sans écart sur 106 524 groupes. Un changement de la source modifierait le sens d'un champ lu ; je le propose bloquant.
 4. **Vérification indépendante** (garantie 3) : elle n'a pas de fiche. Je propose de créer **ALG-14** (script distinct relisant des fichiers bruts tirés au hasard et comparant chaque chiffre de `scrutins/<id>.json`). Veux-tu que je la rédige ?
@@ -141,3 +141,4 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- v2 (2026-11-13) : correction après relecture : l'écart du scrutin n° 1 apparaît aussi en R08 (21 lignes nominatives `non_votant` pour 10 au total), pas seulement en R07.

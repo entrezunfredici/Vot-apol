@@ -37,7 +37,8 @@ class RapportLecture:
     octets_lus: int = 0
     numero_min: int | None = None
     numero_max: int | None = None
-    trous: list[int] = field(default_factory=list)
+    trous: list[int] = field(default_factory=list)  # au plus `max_trous_detailles` numéros
+    nb_trous: int = 0  # nombre exact de numéros absents (la liste ci-dessus peut être tronquée)
     avertissements: list[str] = field(default_factory=list)
     statut: str = "echec"  # "complet" | "partiel" | "echec"
     motif_echec: str | None = None

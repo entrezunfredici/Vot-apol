@@ -24,7 +24,7 @@ Exclus : détail des contrôles (ALG-01, 05, 07, 11, 13), commandes `wrangler`, 
 - Sortie : `DecisionPublication` = `{decision, raisons (liste {id, detail}), diff, rapport_sha256}` avec `decision` ∈ `rien_a_faire` | `publier` | `attente_validation` | `bloquer`. Écrite en fichier `decision.json` et affichée dans le résumé de l'exécution.
 
 ### Manifeste
-`manifeste.json` : pour chaque scrutin, `{source_hash, empreinte_chiffres}`. `empreinte_chiffres` est le SHA-256 de la forme sérialisée canonique (ALG-11, étape 9) de : `resultat`, `totaux`, les compteurs de chaque groupe, et la liste complète des votes. Un changement d'`empreinte_chiffres` signifie qu'un **chiffre officiel publié** a changé ; un changement du seul `source_hash` peut venir d'un titre ou d'un champ non publié.
+`manifeste.json` : `entrees` = `{archive_sha256, versions_algorithmes, referentiels_sha256, version_regles_classification, empreinte_entrees}` (ce qui peut changer le résultat) et `donnees_sha256` (empreinte finale des fichiers publiés) ; puis, pour chaque scrutin, `{source_hash, empreinte_chiffres}`. `empreinte_chiffres` est le SHA-256 de la forme sérialisée canonique (ALG-11, étape 9) de : `resultat`, `totaux`, les compteurs de chaque groupe, et la liste complète des votes. Un changement d'`empreinte_chiffres` signifie qu'un **chiffre officiel publié** a changé ; un changement du seul `source_hash` peut venir d'un titre ou d'un champ non publié.
 
 ### Différences
 `diff` = `{nouveaux (nombre, liste), modifies_chiffres (liste), modifies_autres (liste), supprimes (liste)}` calculé entre `manifeste_precedent` et `manifeste_courant`, par identifiant de scrutin.
@@ -70,7 +70,9 @@ prec     = manifeste_precedent (absent si aucune publication)
 cour     = manifeste_courant
 raisons  = liste vide
 
-si rapports.telechargement.sha256 = empreinte de la version publiée et non forcer:
+empreinte_entrees = SHA256(canonique{archive_sha256, versions des algorithmes ALG-02 à ALG-11,
+                      sha256 de chaque référentiel, version des règles de classification})
+si empreinte_entrees = celle du manifeste publié et non forcer:
     decision = "rien_a_faire" ; arrêt                                              [1]
 
 # Règles bloquantes (B)
@@ -117,7 +119,7 @@ Propriétés : une règle B vraie impose `bloquer` quelles que soient les autres
 ## Algorithme
 | # | Étape | Justification |
 |---|-------|---------------|
-| 1 | Si l'empreinte d'archive du téléchargement est égale à celle de la version **publiée** et que `forcer` est faux : `rien_a_faire`, arrêt | Cahier §10 : ne pas importer ni déployer si l'archive est inchangée. On compare à la version publiée et **non** au dernier import : si un déploiement a échoué, l'exécution suivante doit retenter |
+| 1 | Calculer l'`empreinte_entrees` du téléchargement (archive, version des algorithmes de transformation, empreintes des référentiels, version des règles de classification). Si elle est égale à celle de la version **publiée** et que `forcer` est faux : `rien_a_faire`, arrêt | Cahier §10 : ne pas importer ni déployer si rien n'a changé. Une archive inchangée ne suffit pas : une correction d'algorithme (ALG-03, ALG-08…) ou un nouveau référentiel peut changer les données publiées. Si seule l'archive est inchangée mais que d'autres entrées ont changé, on continue (le diff d'étape 3 dira si des chiffres publiés bougent). On compare à la version publiée et **non** au dernier import : si un déploiement a échoué, l'exécution suivante doit retenter |
 | 2 | Évaluer G01 à G05 ; si au moins une est vraie : `bloquer`, avec **toutes** les raisons | Un échec de contrôle ne se discute pas ; le rapport doit tout dire d'un coup |
 | 3 | Calculer `diff` entre manifestes (étape non exécutée s'il n'y a pas de manifeste précédent, `nouveaux` = tous) | Mesure objective de l'ampleur du changement |
 | 4 | Évaluer V00 à V08 ; relever **toutes** celles qui sont vraies | Idem |
@@ -134,7 +136,8 @@ La version publiée précédente doit pouvoir être redéployée sans reconstruc
 ## Cas limites et erreurs
 | Cas | Résultat attendu | Pourquoi |
 |-----|------------------|----------|
-| Même archive que la version publiée | `rien_a_faire` | étape 1 |
+| Même archive, mêmes versions d'algorithmes, mêmes référentiels et mêmes règles que la version publiée | `rien_a_faire` | étape 1 |
+| Même archive, mais version d'un algorithme (ou référentiel, ou règles de classification) différente | poursuite du traitement (diff, puis V…) | l'archive seule ne détermine pas les données publiées |
 | 12 nouveaux scrutins, aucun autre changement, contrôles ok, `mode_sur` inactif | `publier` | cas courant |
 | Même cas, `mode_sur` actif | `attente_validation` (V00) | mode sûr initial |
 | Un scrutin publié dont `pour` change | `attente_validation` (V03) | un chiffre officiel publié a changé |

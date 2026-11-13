@@ -18,7 +18,7 @@ Exclus : le téléchargement (statut HTTP, taille, fraîcheur, URL : fiche à cr
 - Entrées : `source` (chemin d'un `.zip` ou d'un dossier contenant `json/`), `legislature` attendue (entier, 17 par défaut), paramètres de limites (ci-dessous).
 - Sorties :
   1. flux d'entrées acceptées, triées par numéro de scrutin croissant : `{nom, numero, sha256_fichier, octets_bruts, document_json}` ;
-  2. `RapportLecture` : `type_source` (`zip` | `dossier`), `empreinte_archive`, `type_empreinte` (`fichier` | `manifeste`), `entrees_vues`, `acceptees`, `ignorees` (entrées de dossier), `refusees` (liste `{nom, motif}`), `octets_lus`, `numero_min`, `numero_max`, `trous` (numéros absents entre min et max), `avertissements`, `statut` (`complet` | `partiel` | `echec`), `motif_echec` (`source_introuvable`, `zip_invalide`, `trop_d_entrees`, `nom_en_double`, `taille_declaree_excessive`, `octets_totaux_excessifs`, `aucune_entree_acceptee`, sinon vide), `liens_symboliques_ignores` (compteur à part, hors `entrees_vues`).
+  2. `RapportLecture` : `type_source` (`zip` | `dossier`), `empreinte_archive`, `type_empreinte` (`fichier` | `manifeste`), `entrees_vues`, `acceptees`, `ignorees` (entrées de dossier), `refusees` (liste `{nom, motif}`), `octets_lus`, `numero_min`, `numero_max`, `trous` (numéros absents entre min et max, **au plus `MAX_TROUS_DETAILLES`** premiers), `nb_trous` (nombre exact), `avertissements`, `statut` (`complet` | `partiel` | `echec`), `motif_echec` (`source_introuvable`, `zip_invalide`, `trop_d_entrees`, `nom_en_double`, `taille_declaree_excessive`, `octets_totaux_excessifs`, `aucune_entree_acceptee`, sinon vide), `liens_symboliques_ignores` (compteur à part, hors `entrees_vues`).
 
 ## Paramètres (valeurs proposées et justification)
 | Paramètre | Valeur | Justification |
@@ -26,11 +26,12 @@ Exclus : le téléchargement (statut HTTP, taille, fraîcheur, URL : fiche à cr
 | `MAX_ENTREES` | 50 000 | 5,6 × le nombre observé (8 877) : laisse de la marge à la législature, bloque une archive truquée contenant des millions d'entrées |
 | `MAX_OCTETS_ENTREE` | 5 Mio (5 242 880) | 85 × le plus gros fichier observé (61 251) : tolère de gros scrutins, bloque une bombe de décompression |
 | `MAX_OCTETS_TOTAL` | 1 Gio | 5,8 × le total observé (172 Mio) : marge pour la législature, borne la mémoire et le temps |
+| `MAX_TROUS_DETAILLES` | 1 000 | borne la taille du rapport : le compte exact est dans `nb_trous`, jamais d'énumération de l'intervalle (deux scrutins n° 1 et 10⁹ ne doivent pas construire 10⁹ entiers) |
 | `MAX_RATIO` | 100 | rapport taille décompressée / taille compressée d'une entrée ; le JSON texte compresse typiquement entre 5 et 20, 100 est un seuil clairement anormal. À mesurer sur le vrai ZIP avant de figer |
 | `PROFONDEUR_JSON` | limite d'interpréteur par défaut | la profondeur observée est faible ; un dépassement est un refus d'entrée |
 
 ## Définitions
-- Motif de nom admis : `json/VTANR5L<L>V<n>.json`, avec `L` = législature attendue (sans zéro initial) et `n` entier ≥ 1 sans zéro initial. Pour un dossier, le chemin relatif depuis la source est testé avec le même motif. Le motif est comparé exactement (sensible à la casse).
+- Motif de nom admis : `json/VTANR5L<L>V<n>.json`, avec `L` = législature attendue (sans zéro initial) et `n` entier ≥ 1 sans zéro initial, 9 chiffres au plus (au-delà : `hors_motif`, ce qui évite aussi la limite de conversion d'entier de Python). Pour un dossier, le chemin relatif depuis la source est testé avec le même motif. Le motif est comparé exactement (sensible à la casse).
 - Empreinte d'une entrée : SHA-256 des octets bruts du fichier.
 - Empreinte de l'archive : pour un ZIP, SHA-256 des octets du fichier ZIP ; pour un dossier, SHA-256 du manifeste (une ligne `nom<TAB>sha256_fichier` par entrée acceptée ou refusée dont le contenu a pu être lu, triée par nom, terminée par `\n`).
 
@@ -95,7 +96,7 @@ pour chaque entrée e:
 # 4. Bilan
 acceptees   = trier par n croissant                                    [21]
 numero_min  = min(n) ; numero_max = max(n)
-trous       = { k dans [numero_min .. numero_max] | k absent de acceptees }
+trous       = { k dans [numero_min .. numero_max] | k absent de acceptees }   # compté, détail plafonné
 si source est un dossier:
     rapport.empreinte_archive = SHA256(manifeste trié "nom<TAB>sha256")  [22]
 
@@ -119,9 +120,9 @@ Relations mathématiques à retenir :
 | 2 | Si `source` est un fichier : ouvrir **une seule fois** le descripteur et le conserver pour les étapes 3 et 4 | L'empreinte doit correspondre exactement aux octets lus ; deux ouvertures permettraient un remplacement de fichier entre les deux (TOCTOU) |
 | 3 | ZIP : calculer le SHA-256 en lisant le descripteur par blocs de 1 Mio, puis revenir au début | Empreinte de provenance (comparaison avec l'import précédent, audit) sans charger 27 Mo en mémoire |
 | 4 | ZIP : ouvrir l'archive depuis ce descripteur ; en cas d'archive invalide : `echec` | Un ZIP illisible ne produit aucune donnée partielle |
-| 5 | ZIP : lister les entrées ; si leur nombre dépasse `MAX_ENTREES` : `echec` | Borne le travail avant tout traitement |
+| 5 | Lister les entrées (**ZIP et dossier** ; le parcours d'un dossier s'arrête dès que la borne est dépassée) ; si leur nombre dépasse `MAX_ENTREES` : `echec` | Borne le travail avant tout traitement |
 | 6 | ZIP : si deux entrées portent le même nom : `echec` | Un nom en double rend ambigu le contenu faisant foi ; c'est aussi une technique de dissimulation |
-| 7 | ZIP : si la somme des tailles déclarées dépasse `MAX_OCTETS_TOTAL` : `echec` | Contrôle a priori de la bombe de décompression ; les tailles déclarées sont revérifiées à l'étape 13 |
+| 7 | ZIP et dossier : si la somme des tailles déclarées dépasse `MAX_OCTETS_TOTAL` : `echec` | Contrôle a priori de la bombe de décompression ; les tailles déclarées sont revérifiées à l'étape 13 |
 | 8 | Dossier : parcourir `source/json` en profondeur, sans suivre de lien symbolique ; ignorer (avec compteur) les liens symboliques, refuser avec le motif `lien_symbolique` ceux dont le nom correspond au motif | Un lien pourrait pointer hors de la source ; on ne lit que des fichiers réels sous la racine |
 | 9 | Pour chaque entrée, dans l'ordre alphabétique des noms : si le nom est celui d'un dossier (se termine par `/`) → compteur `ignorees`, suivant | Les ZIP contiennent des entrées de dossier sans contenu |
 | 10 | Si le nom contient `\`, `\0`, un caractère de contrôle, commence par `/`, contient un segment `..` ou une lettre de lecteur : refuser (`nom_dangereux`) | Protection contre le zip-slip et les chemins Windows ; vérifiée avant même le motif pour que le motif ne soit jamais le seul rempart |

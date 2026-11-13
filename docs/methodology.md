@@ -45,7 +45,9 @@ Pour un groupe et un scrutin, il s'agit de `m sur E` : le nombre de membres ayan
 
 Sur plusieurs scrutins, on affiche la répartition brute (par exemple : « sur 120 scrutins, 80 avec au moins 90 % des exprimés sur la position majoritaire »), jamais une moyenne unique.
 
-## Présence au scrutin
+## Participation au vote enregistrée
+
+**Ce n'est pas une présence physique** : un vote par délégation compte comme une position exprimée.
 
 `E` membres sur `effectif` : membres du groupe ayant exprimé une position. Les non-votants sont indiqués à part (`N`), avec leur cause lorsqu'elle est connue.
 

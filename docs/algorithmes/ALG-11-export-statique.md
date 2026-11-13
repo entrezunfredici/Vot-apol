@@ -88,7 +88,7 @@ si une ligne d'index n'a pas de fichier, ou un groupe_id / depute_id est inconnu
 comparer un échantillon de fichiers aux lignes de la base                           [13]
 
 si statut ≠ "echec":                                                                [14]
-    remplacer sortie par tmp (renommage)
+    publier tmp vers sortie (procédure de publication/restauration, étape 14)
 sinon:
     supprimer tmp ; conserver l'ancien sortie intact
 retourner RapportExport (nombre de fichiers, octets, plus gros fichier)             [15]
@@ -112,7 +112,7 @@ Propriétés : mêmes entrées → mêmes octets ; un échec laisse la version p
 | 11 | Vérifier : nombre de fichiers ≤ `MAX_FICHIERS_ECHEC` (avertissement au-delà de `MAX_FICHIERS_AVERTISSEMENT`) ; aucun fichier au-delà de `MAX_OCTETS_FICHIER_ECHEC` (avertissement au-delà de `MAX_OCTETS_FICHIER_AVERTISSEMENT`) | Contraintes de l'hébergement (cahier §8 et §10) : l'export échoue plutôt que de produire un déploiement refusé |
 | 12 | Vérifier l'intégrité des références : chaque ligne d'index a un fichier de scrutin ; chaque `groupe_id` et `depute_id` d'un scrutin figure dans `groupes.json` ou `deputes.json` ; `meta.json` égal aux comptes de la base | Aucun lien mort dans le site |
 | 13 | Relire un échantillon de fichiers produits et comparer chaque chiffre aux lignes de la base (relecture indépendante de l'écriture) | Détecte un défaut de l'étape 3 avant publication (la vérification contre les fichiers bruts est ALG-14, voir question 6) |
-| 14 | En cas de succès uniquement : remplacer `repertoire_sortie` par le répertoire temporaire (renommage) ; sinon supprimer le temporaire, conserver l'ancien répertoire, `statut = echec` | Un échec ne casse pas la version précédente (cahier §10, point 6) |
+| 14 | En cas de succès uniquement : publier le répertoire temporaire : renommer l'ancien `repertoire_sortie` en `sortie.precedent`, renommer le temporaire en `repertoire_sortie`, puis supprimer `sortie.precedent` seulement si les deux renommages ont réussi ; si le second échoue, renommer `sortie.precedent` en `repertoire_sortie` (restauration). Au démarrage, un `sortie.precedent` orphelin signale une publication interrompue : le restaurer avant tout. Sinon (échec d'export) supprimer le temporaire, conserver l'ancien répertoire, `statut = echec`. Un renommage de répertoire n'est pas atomique sur tous les systèmes : c'est la procédure, pas l'opération, qui garantit qu'il reste toujours une version complète | Un échec ne casse pas la version précédente (cahier §10, point 6) |
 | 15 | Retourner le `RapportExport`, journalisé en entier | Traçabilité |
 
 ## Cas limites et erreurs

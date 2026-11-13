@@ -20,7 +20,7 @@ Deux temps : **A. rattachement** (à l'import, avant écriture) ; **B. effectifs
 - Entrées : `LotScrutin` (ALG-04) d'un scrutin, avec ses lignes `scrutin_group_votes`, `scrutin_individual_votes`, `scrutin_mises_au_point`.
 - Sorties :
   - A : le même lot dont les lignes `scrutin_mises_au_point` ont `groupe_rang`, `groupe_id` et `position_initiale` renseignés lorsque le député est retrouvé, plus un `statut_rattachement` calculé (`rattachee` | `introuvable`) et un `effet` (`sans_effet` | `modifie_position`) ;
-  - B : liste `CorrectionGroupe` = `{rang, groupe_id, pour_corrige, contre_corrige, abstentions_corrigees, position_officielle, position_corrigee, raison_absence_corrigee, change_resultat, nb_mises_au_point}`, pour les seuls groupes identifiés qui ont au moins une mise au point rattachée à effet.
+  - B : liste `CorrectionGroupe` = `{rang, groupe_id, pour_corrige, contre_corrige, abstentions_corrigees, position_officielle, position_corrigee, raison_absence_corrigee, change_position_majoritaire, nb_mises_au_point}`, pour les seuls groupes identifiés qui ont au moins une mise au point rattachée à effet.
 
 ## Définitions
 - Position initiale d'un député : sa position dans `scrutin_individual_votes` du même scrutin (`pour`, `contre`, `abstention`, `non_votant`).
@@ -28,7 +28,7 @@ Deux temps : **A. rattachement** (à l'import, avant écriture) ; **B. effectifs
 - Position exprimée : `pour`, `contre` ou `abstention`. `non_votant` et `non_votant_volontaire` ne sont **pas** des positions exprimées (règle du projet : un non-vote n'est pas une abstention).
 - Mise au point **à effet** : rattachée, d'origine `mise_au_point`, et dont la position déclarée diffère de la position initiale.
 - Effectifs corrigés d'un groupe : `p' = p − (nombre de mises au point à effet dont la position initiale est pour) + (nombre dont la position déclarée est pour)` ; même formule pour `c'` et `a'`.
-- `change_resultat` ⇔ `position_corrigee ≠ position_officielle` (le passage de « aucune » à une position, ou l'inverse, compte).
+- `change_position_majoritaire` (la position majoritaire du groupe change ; ce n'est pas l'issue officielle du scrutin) ⇔ `position_corrigee ≠ position_officielle` (le passage de « aucune » à une position, ou l'inverse, compte).
 
 ## Algorithme logique (vue d'ensemble)
 Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Deux temps : A (rattachement, à l'import) puis B (effectifs corrigés, à l'export).
@@ -57,14 +57,14 @@ pour chaque groupe g identifié (groupe_id ≠ NULL) ayant au moins un m dans a_
     si p', c' ou a' < 0: erreur de donnée                                           [10]
     position_officielle = ALG-03(p, c, a)
     position_corrigee   = ALG-03(p', c', a')                                        [8]
-    change_resultat     = (position_corrigee ≠ position_officielle)                 [9]
-    si change_resultat:
+    change_position_majoritaire     = (position_corrigee ≠ position_officielle)                 [9]
+    si change_position_majoritaire:
         afficher "Une mise au point modifie ce résultat pour " + g
 
 retourner (lignes complétées, corrections triées par rang)                          [11]
 ```
 
-Formules : `p' = p − #(initiale = pour) + #(déclarée = pour)`, idem pour `c'` et `a'`. Un non-votant (`non_votant`, `non_votant_volontaire`) n'est jamais une position exprimée : on ne l'ajoute pas et on ne le compte pas comme abstention. Exemple : (p, c, a) = (5, 5, 0), un député passe de contre à pour → (6, 4, 0), la position passe de « aucune (égalité) » à « pour » : `change_resultat` = vrai. Les compteurs officiels ne sont jamais modifiés.
+Formules : `p' = p − #(initiale = pour) + #(déclarée = pour)`, idem pour `c'` et `a'`. Un non-votant (`non_votant`, `non_votant_volontaire`) n'est jamais une position exprimée : on ne l'ajoute pas et on ne le compte pas comme abstention. Exemple : (p, c, a) = (5, 5, 0), un député passe de contre à pour → (6, 4, 0), la position passe de « aucune (égalité) » à « pour » : `change_position_majoritaire` = vrai. Les compteurs officiels ne sont jamais modifiés.
 
 ## Algorithme
 | # | Étape | Justification |
@@ -77,7 +77,7 @@ Formules : `p' = p − #(initiale = pour) + #(déclarée = pour)`, idem pour `c'
 | 6 | **B.** Regrouper les lignes à effet d'origine `mise_au_point` par `groupe_rang` ; ignorer les groupes dont `groupe_id` est `NULL` | La ventilation d'un groupe non identifié est « indisponible » (ALG-02, question 1) : on n'en tire aucun indicateur |
 | 7 | **B.** Pour chaque groupe retenu, partir de `p, c, a` (compteurs officiels du groupe) ; pour chaque mise au point à effet : retirer 1 à l'effectif de la position initiale si elle est exprimée ; ajouter 1 à l'effectif de la position déclarée si elle est exprimée | La position non exprimée n'a pas d'effectif à ajuster ; une personne ne change d'effectif que si elle est ou devient « exprimée » |
 | 8 | **B.** Calculer `position_corrigee` en appliquant ALG-03 à `(p', c', a')` ; `position_officielle` en l'appliquant à `(p, c, a)` | Une seule règle de calcul pour les deux cas, donc comparable |
-| 9 | **B.** `change_resultat` ← `position_corrigee ≠ position_officielle` (comparaison de la position, pas des effectifs) | Le signalement « Une mise au point modifie ce résultat » ne s'affiche que si la position majoritaire change |
+| 9 | **B.** `change_position_majoritaire` ← `position_corrigee ≠ position_officielle` (comparaison de la position, pas des effectifs) | Le signalement « Une mise au point modifie ce résultat » ne s'affiche que si la position majoritaire change |
 | 10 | **B.** Vérifier `p', c', a' ≥ 0` ; sinon erreur de donnée (ne devrait jamais arriver si ALG-05 R09 est satisfait) | Un effectif négatif signalerait un défaut de rattachement ou de réconciliation |
 | 11 | Retourner les lignes complétées (A) et la liste des corrections (B, triée par `rang`) ; aucune écriture, aucune modification des compteurs officiels | Garantie : les chiffres officiels ne sont pas modifiés ; les effectifs corrigés ne sont jamais présentés comme officiels (méthodologie, règle 5) |
 
@@ -96,7 +96,7 @@ Formules : `p' = p − #(initiale = pour) + #(déclarée = pour)`, idem pour `c'
 ## Exemples chiffrés (arithmétique construite, à reproduire en test)
 Ces cas sont des cas **construits** qui testent l'arithmétique de l'étape 7, pas des résultats parlementaires. Des cas réels seront ajoutés après examen des 171 cas mesurés.
 
-| Groupe officiel (p, c, a) | Mises au point à effet | Corrigé (p', c', a') | Position officielle → corrigée | `change_resultat` |
+| Groupe officiel (p, c, a) | Mises au point à effet | Corrigé (p', c', a') | Position officielle → corrigée | `change_position_majoritaire` |
 |---------------------------|------------------------|----------------------|--------------------------------|-------------------|
 | (5, 5, 0) | 1 député `contre` → `pour` | (6, 4, 0) | aucune (égalité) → pour | vrai |
 | (12, 2, 0) | 1 député `contre` → `pour` | (13, 1, 0) | pour → pour | faux |

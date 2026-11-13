@@ -26,7 +26,8 @@ MAX_ERREURS = 50  # ALG-02.23
 XMLNS_ATTENDU = "http://schemas.assemblee-nationale.fr/referentiel"
 XMLNS_XSI_ATTENDU = "http://www.w3.org/2001/XMLSchema-instance"
 
-_ENTIER = re.compile(r"0|[1-9][0-9]*")
+# 18 chiffres au plus : borne la conversion int() (limite de Python sur les très longues chaînes)
+_ENTIER = re.compile(r"0|[1-9][0-9]{0,17}")
 _DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 # Tables de vocabulaire fermées (fiche, « Tables de vocabulaire »)

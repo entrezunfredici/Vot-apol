@@ -26,6 +26,7 @@ class LimitesLecture:
     max_octets_entree: int = 5 * 1024 * 1024
     max_octets_total: int = 1024 * 1024 * 1024
     max_ratio: int = 100
+    max_trous_detailles: int = 1000
 
 
 LIMITES_PAR_DEFAUT = LimitesLecture()
@@ -63,12 +64,12 @@ class SourceArchive(Protocol):
     type_empreinte: str
 
     def empreinte_fichier(self) -> str | None: ...
-    def lister(self) -> list[EntreeBrute]: ...
+    def lister(self, plafond: int | None = None) -> list[EntreeBrute]: ...
     def lire(self, nom: str, plafond: int) -> bytes: ...
     def fermer(self) -> None: ...
 
 
-_NOM_SCRUTIN = re.compile(r"json/VTANR5L(?P<leg>[1-9][0-9]*)V(?P<num>[1-9][0-9]*)\.json")
+_NOM_SCRUTIN = re.compile(r"json/VTANR5L(?P<leg>[1-9][0-9]*)V(?P<num>[1-9][0-9]{0,8})\.json")
 _FORME_SCRUTIN = re.compile(r"VTANR5L[0-9]+V[0-9]+\.json")
 _LECTEUR = re.compile(r"[A-Za-z]:")
 
@@ -149,10 +150,10 @@ def lire_archive(
     if empreinte is not None:
         rapport.empreinte_archive = empreinte
 
-    entrees = source.lister()
-
-    # ALG-01.5 : borne du nombre d'entrées (ZIP)
-    if source.type_source == "zip" and len(entrees) > limites.max_entrees:
+    # ALG-01.5 : borne du nombre d'entrées (ZIP et dossier ; le parcours d'un dossier s'arrête
+    # dès que la borne est dépassée)
+    entrees = source.lister(limites.max_entrees)
+    if len(entrees) > limites.max_entrees:
         rapport.motif_echec = "trop_d_entrees"
         return [], rapport
 
@@ -164,9 +165,7 @@ def lire_archive(
             return [], rapport
 
     # ALG-01.7 : somme des tailles déclarées (ZIP)
-    if source.type_source == "zip" and sum(e.taille_declaree for e in entrees) > (
-        limites.max_octets_total
-    ):
+    if sum(e.taille_declaree for e in entrees) > limites.max_octets_total:
         rapport.motif_echec = "taille_declaree_excessive"
         return [], rapport
 
@@ -263,16 +262,26 @@ def lire_archive(
         # ALG-01.20 : entrée acceptée avec son empreinte
         acceptees.append(EntreeAcceptee(nom, numero, hachage, len(octets), document))
 
-    # ALG-01.21 : tri par numéro croissant, bornes et trous de numérotation
+    # ALG-01.21 : tri par numéro croissant, bornes et trous de numérotation (compte exact,
+    # détail plafonné)
     acceptees.sort(key=lambda a: a.numero)
     rapport.acceptees = len(acceptees)
     if acceptees:
         rapport.numero_min = acceptees[0].numero
         rapport.numero_max = acceptees[-1].numero
         presents = {a.numero for a in acceptees}
-        rapport.trous = [
-            k for k in range(rapport.numero_min, rapport.numero_max + 1) if k not in presents
-        ]
+        # CHOIX: les trous sont comptés par écarts entre numéros consécutifs, sans énumérer
+        # l'intervalle ; seuls les `max_trous_detailles` premiers sont détaillés
+        # RAISON: deux scrutins numérotés 1 et 10⁹ ne doivent pas construire 10⁹ entiers
+        numeros = sorted(presents)
+        for avant, apres in zip(numeros, numeros[1:], strict=False):
+            ecart = apres - avant - 1
+            if ecart <= 0:
+                continue
+            rapport.nb_trous += ecart
+            restant = limites.max_trous_detailles - len(rapport.trous)
+            if restant > 0:
+                rapport.trous.extend(range(avant + 1, avant + 1 + min(ecart, restant)))
 
     # ALG-01.22 : empreinte d'un dossier = SHA-256 du manifeste trié
     if source.type_source == "dossier":
@@ -289,7 +298,7 @@ def lire_archive(
         rapport.statut = "complet"
 
     # ALG-01.24 : numérotation discontinue = avertissement, sans changer le statut
-    if rapport.trous or (rapport.numero_min is not None and rapport.numero_min != 1):
+    if rapport.nb_trous or (rapport.numero_min is not None and rapport.numero_min != 1):
         rapport.avertissements.append("numérotation discontinue")
 
     # ALG-01.25 : retour du flux trié et du rapport (journalisé en entier par l'appelant)

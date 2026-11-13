@@ -331,3 +331,31 @@ def test_ALG_01_dossier_reel_complet():
     assert r.octets_lus == 180_527_979
     assert r.statut == "complet" and r.type_empreinte == "manifeste"
     assert len(acceptees) == 8877
+
+
+def test_ALG_01_numerotation_extreme_ne_construit_pas_de_liste_enorme(tmp_path):
+    chemin = _zip(
+        tmp_path / "t.zip",
+        [("json/VTANR5L17V1.json", _faux(1)), ("json/VTANR5L17V999999999.json", _faux(999999999))],
+    )
+    _, r = lire_source(chemin)
+    assert r.nb_trous == 999999997 and len(r.trous) == 1000 and r.trous[:2] == [2, 3]
+    assert "numérotation discontinue" in r.avertissements
+
+
+def test_ALG_01_numero_de_plus_de_9_chiffres_hors_motif(tmp_path):
+    nom = "json/VTANR5L17V" + "1" * 5000 + ".json"
+    _, r = lire_source(_zip(tmp_path / "t.zip", [(nom, b"{}")]))
+    assert [e.motif for e in r.refusees] == ["hors_motif"]
+
+
+def test_ALG_01_dossier_trop_d_entrees(tmp_path):
+    d = _dossier(tmp_path / "d", [1, 2, 3])
+    _, r = lire_source(str(d), limites=LimitesLecture(max_entrees=2))
+    assert r.statut == "echec" and r.motif_echec == "trop_d_entrees"
+
+
+def test_ALG_01_dossier_octets_declares_excessifs(tmp_path):
+    d = _dossier(tmp_path / "d", [1, 2])
+    _, r = lire_source(str(d), limites=LimitesLecture(max_octets_total=10))
+    assert r.statut == "echec" and r.motif_echec == "taille_declaree_excessive"

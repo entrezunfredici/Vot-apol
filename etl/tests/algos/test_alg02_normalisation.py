@@ -48,7 +48,7 @@ def test_ALG_02_entier_valide(valeur, attendu):
     assert entier(valeur, ctx, "x") == attendu and ctx.nb_erreurs == 0
 
 
-@pytest.mark.parametrize("valeur", ["012", "", "1.0", " 1", "-1", "+1", None, True, 1.5, -1, "１"])
+@pytest.mark.parametrize("valeur", ["012", "", "1.0", " 1", "-1", "+1", None, True, 1.5, -1, "１", "9" * 5000])
 def test_ALG_02_entier_invalide(valeur):
     ctx = _Contexte()
     assert entier(valeur, ctx, "x") is None and ctx.nb_erreurs == 1
