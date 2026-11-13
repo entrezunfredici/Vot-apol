@@ -1,5 +1,5 @@
 # ALG-05 — Contrôles de réconciliation (totaux, groupes, nominatif)
-Statut : Brouillon    Version : 2    Date : 2026-11-13
+Statut : Brouillon    Version : 3    Date : 2026-11-13
 
 ## But
 Vérifier, scrutin par scrutin, que les chiffres de la source se recoupent entre eux (totaux, groupes, votes nominatifs, résultat), consigner chaque écart sans jamais le corriger ni le masquer, et distinguer les écarts **connus et validés** des écarts **nouveaux**, qui bloquent la publication (garantie 2).
@@ -20,10 +20,10 @@ Exclus : décision de publier ou de bloquer (ALG-12, qui consomme le rapport), v
   - niveau `lot` (avant écriture, dans l'import) : `LotScrutin` (ALG-04) et `ScrutinNormalise` (ALG-02), pour les contrôles qui ont besoin de champs non stockés ;
   - niveau `base` (commande `etl validate`) : la base SQLite, **relue uniquement par requêtes**, sans réutiliser d'objet en mémoire de l'import.
   - dans les deux cas : le fichier des écarts connus `ecarts_connus.json` (ci-dessous).
-- Sortie : `RapportReconciliation` : `niveau`, `scrutins_controles`, `controles` (pour chaque identifiant : `nb_verifies`, `nb_ecarts`), `ecarts` (liste `{controle, scrutin_id, groupe_rang, attendu, obtenu, connu}`), `statut` ∈ {`ok`, `ecarts_connus`, `ecarts_nouveaux`}.
+- Sortie : `RapportReconciliation` : `niveau`, `scrutins_controles`, `controles` (pour chaque identifiant : `nb_verifies`, `nb_ecarts`), `ecarts` (liste `{controle, scrutin_id, groupe_rang, attendu, obtenu, connu}`), `statut` ∈ {`ok`, `ecarts_connus`, `ecarts_informatifs`, `ecarts_nouveaux`} ; les écarts portent aussi un champ `detail` (position pour R08 et R09, objet pour R17).
 
 ### Fichier des écarts connus
-Fichier versionné dans le dépôt, une entrée par écart validé à la main : `{controle, scrutin_id, groupe_rang (ou null), attendu, obtenu, motif, valide_le, valide_par}`. Un écart relevé est « connu » **seulement si** contrôle, scrutin, rang, valeur attendue **et valeur obtenue** sont identiques à une entrée. Si la source change la valeur de l'écart, il redevient nouveau.
+Fichier versionné dans le dépôt, une entrée par écart validé à la main : `{controle, scrutin_id, groupe_rang (ou null), detail (ou null), attendu, obtenu, motif, valide_le, valide_par}`. Un écart relevé est « connu » **seulement si** contrôle, scrutin, rang, détail, valeur attendue **et valeur obtenue** sont identiques à une entrée. Fichier : `etl/ecarts_connus.json`. Les deux entrées du scrutin n° 1 portent `valide_par = « EN ATTENTE DE VALIDATION HUMAINE »` tant que le fichier n'a pas été examiné avec le responsable du projet. Si la source change la valeur de l'écart, il redevient nouveau.
 
 ## Définitions
 Pour un scrutin : `P, C, A, N` = totaux `pour`, `contre`, `abstentions`, `non_votants` ; `X` = `suffrages_exprimes` ; `V` = `nombre_votants` ; `R` = `nbr_suffrages_requis`.
@@ -44,16 +44,17 @@ Sévérité : **B** = un écart nouveau bloque ; **I** = écart consigné et aff
 | R08 | Pour chaque position, nombre de lignes de vote du scrutin = total (`P`, `C`, `A`, `N`) | lot, base | B | **1 écart connu** : scrutin n° 1, position `non_votant` (21 ≠ 10) ; 0 écart sur les autres positions |
 | R09 | Pour chaque groupe et position : `l_p = p`, `l_c = c`, `l_a = a`, `l_n = n` | lot, base | B | 0 écart (106 524 × 4 comparaisons) |
 | R10 | Pour chaque groupe : `p + c + a + n ≤ membres` | lot, base | B | 0 écart |
-| R11 | `adopté` ⇔ `P ≥ R` | lot, base | B | 0 écart |
-| R12 | Hors motion de censure : `R = ⌊X / 2⌋ + 1` | lot, base | I | 0 écart |
+| R11 | `adopté` ⇔ `P ≥ R` | lot | B | 0 écart |
+| R12 | Hors motion de censure : `R = ⌊X / 2⌋ + 1` | lot | I | 0 écart |
 | R13 | Total `non_votants_volontaires` du scrutin = 0 | lot | I | 0 écart |
 | R14 | `abstentions_doublon_source` d'un groupe = `a` | lot | B | 0 écart (106 524 groupes) |
-| R15 | Chaque `groupe_id` et `depute_id` des tables de votes existe dans `groupes` et `deputes` | base | B | 0 écart |
+| R15 | Chaque `groupe_id` et `depute_id` des tables de votes (et des groupes de scrutin) existe dans `groupes` et `deputes` | base | B | 0 écart |
 | R16 | Nombre de lignes de `scrutins` = nombre de scrutins acceptés par l'import le plus récent, plus les scrutins antérieurs absents de l'archive (ALG-07) | base | B | égalité |
 | R17 | Aucun scrutin sans groupe, aucun scrutin sans ligne `scrutin_totals` | base | B | 0 écart |
 
 Remarques :
 - R12 est informatif : la règle de majorité est une règle de droit constitutionnel ou réglementaire que le projet n'a pas à faire respecter ; un écart signalerait seulement une donnée à regarder.
+- R11 et R12 n'existent qu'au niveau `lot` : `nbr_suffrages_requis` n'est pas stocké (ALG-04, champs non stockés).
 - R13 et R14 ne s'exécutent qu'au niveau `lot` car `non_votants_volontaires` et le doublon ne sont pas stockés (ALG-04).
 - R16 ne se calcule qu'à la fin d'un import complet (ALG-07).
 
@@ -88,12 +89,13 @@ pour chaque entrée de connus jamais rencontrée:
 
 # Statut global
 si ∃ écart de sévérité B avec connu = faux:   statut = "ecarts_nouveaux"            [7]
+sinon si ∃ écart de sévérité I non connu:    statut = "ecarts_informatifs"
 sinon si ∃ écart (connu):                     statut = "ecarts_connus"
 sinon:                                        statut = "ok"
 journaliser le rapport complet ; ne rien modifier                                   [8]
 ```
 
-Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p = P`, `Σ c = C`, `Σ a = A`, `Σ n = N` ; `l_q = compteur_q` pour chaque groupe et position ; `p + c + a + n ≤ membres` ; `adopté ⇔ P ≥ R`. Un défaut unique (un `pour` modifié) fait apparaître plusieurs écarts distincts (R02, R04, R08), ce qui aide à le localiser. Une base vide n'est jamais `ok`.
+Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p = P`, `Σ c = C`, `Σ a = A`, `Σ n = N` ; `l_q = compteur_q` pour chaque groupe et position ; `p + c + a + n ≤ membres` ; `adopté ⇔ P ≥ R`. Un défaut unique (un `pour` modifié) fait apparaître plusieurs écarts distincts (R02, R03, R04, R08), ce qui aide à le localiser. Une base vide n'est jamais `ok`.
 
 ## Algorithme
 | # | Étape | Justification |
@@ -103,8 +105,8 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 | 3 | Tous les calculs sont faits en entiers ; comparer par égalité exacte (ou par inégalité large pour R10) | Aucun arrondi ni flottant, donc aucun écart fantôme |
 | 4 | Un écart enregistre `attendu` et `obtenu` (pas seulement « différent ») | Permet d'identifier un écart connu et de le revoir sans relancer |
 | 5 | Pour chaque écart, chercher une entrée identique dans les écarts connus ; positionner `connu = vrai` si trouvée | Seul l'écart exactement validé est toléré |
-| 6 | Entrée du fichier des écarts connus jamais rencontrée : avertissement `ecart_connu_disparu` (ne bloque pas) | Un écart a pu être corrigé à la source : il faut alors retirer l'entrée plutôt que garder une exception morte |
-| 7 | `statut` : `ecarts_nouveaux` si au moins un écart de sévérité B avec `connu = faux` ; sinon `ecarts_connus` s'il reste des écarts connus ; sinon `ok` | Garantie 2 : un écart nouveau interrompt le déploiement |
+| 6 | Entrée du fichier des écarts connus dont **le scrutin a été examiné** mais dont l'écart n'est plus rencontré : avertissement `ecart_connu_disparu` (ne bloque pas). Les entrées d'autres scrutins ne sont pas concernées (lot partiel) | Un écart a pu être corrigé à la source : il faut alors retirer l'entrée plutôt que garder une exception morte |
+| 7 | `statut` : `ecarts_nouveaux` si au moins un écart de sévérité B avec `connu = faux` ; sinon `ecarts_informatifs` s'il reste un écart de sévérité I non connu ; sinon `ecarts_connus` s'il reste des écarts connus ; sinon `ok` | Garantie 2 : un écart nouveau interrompt le déploiement |
 | 8 | Écrire le rapport en entier dans le journal ; ne jamais modifier la base ni les données | « Jamais corrigé en silence » (cahier §5.2, règle 7) |
 | 9 | Niveau `base` : les requêtes SQL sont paramétrées et n'utilisent aucune donnée issue de l'import en cours (relecture indépendante) | Un défaut d'ALG-04 ou d'ALG-07 doit être détectable : le contrôle ne doit pas partager le code qui a produit les lignes |
 
@@ -117,12 +119,12 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 | Groupe `PO0` | contrôlé comme les autres (les contrôles utilisent le rang, pas l'identifiant) | un groupe non identifié a des totaux exacts |
 | `P + C + A + N > membres` pour un groupe | R10 bloquant | effectif incohérent |
 | Entrée du fichier d'écarts jamais rencontrée | avertissement | étape 6 |
-| Base vide | `scrutins_controles = 0`, statut `ecarts_nouveaux` avec R16 et R17 | une base vide n'est jamais « ok » |
+| Base (ou lot) vide | `scrutins_controles = 0`, statut `ecarts_nouveaux` avec R16 (et R17 au niveau base) | une base vide n'est jamais « ok » |
 | Plus de 1 000 écarts du même contrôle | les 1 000 premiers détaillés, le total exact conservé | rapport lisible, sans perte du compte |
 
 ## Exemples chiffrés (à reproduire en test)
 - Archive réelle complète : `scrutins_controles = 8 877`, R07 : 1 écart connu (scrutin 1), R08 : 1 écart connu (scrutin 1, `non_votant`), tous les autres contrôles : 0 écart, statut `ecarts_connus` (2 écarts connus au total).
-- Scrutin construit en test à partir d'un vrai fichier dont on modifie `pour` de 1 : R02, R04 et R08 en écart (trois contrôles distincts pour un même défaut) ; `connu = faux`.
+- Scrutin construit en test à partir d'un vrai fichier dont on modifie `pour` de 1 : R02, R03, R04 et R08 en écart (quatre contrôles distincts pour un même défaut) ; `connu = faux`.
 
 ## Invariants vérifiés
 - `nb_ecarts ≤ nb_verifies` pour chaque contrôle ; la somme des écarts détaillés est inférieure ou égale au total.
@@ -141,4 +143,5 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- v3 (2026-11-13) : implémentation ; R11 et R12 réservés au niveau lot ; champ `detail` ; statut `ecarts_informatifs` ; règle de `ecart_connu_disparu` limitée aux scrutins examinés ; R03 ajouté à l'exemple du `pour` modifié.
 - v2 (2026-11-13) : correction après relecture : l'écart du scrutin n° 1 apparaît aussi en R08 (21 lignes nominatives `non_votant` pour 10 au total), pas seulement en R07.

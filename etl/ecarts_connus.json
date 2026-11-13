@@ -1,0 +1,24 @@
+[
+  {
+    "controle": "R07",
+    "scrutin_id": "VTANR5L17V1",
+    "groupe_rang": null,
+    "detail": null,
+    "attendu": 10,
+    "obtenu": 21,
+    "motif": "Motion de censure du 2024-10-08 : la somme des non-votants des groupes (21) dépasse le total officiel (10). Constat sur la source, aucune explication trouvée.",
+    "valide_le": "2026-11-13",
+    "valide_par": "EN ATTENTE DE VALIDATION HUMAINE"
+  },
+  {
+    "controle": "R08",
+    "scrutin_id": "VTANR5L17V1",
+    "groupe_rang": null,
+    "detail": "non_votant",
+    "attendu": 10,
+    "obtenu": 21,
+    "motif": "Même scrutin : les lignes de vote nominatif comptent 21 non-votants (10 + 4 + 3 + 3 + 1) pour 10 au total officiel. Les groupes sont cohérents avec leurs lignes (R09 sans écart).",
+    "valide_le": "2026-11-13",
+    "valide_par": "EN ATTENTE DE VALIDATION HUMAINE"
+  }
+]

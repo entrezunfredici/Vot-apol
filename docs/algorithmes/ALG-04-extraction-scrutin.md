@@ -1,5 +1,5 @@
 # ALG-04 — Extraction d'un scrutin (totaux, groupes, votes nominatifs)
-Statut : Brouillon    Version : 1    Date : 2026-11-03
+Statut : Brouillon    Version : 2    Date : 2026-11-13
 
 ## But
 Projeter un `ScrutinNormalise` (sortie d'ALG-02) en lignes prêtes à être écrites dans les tables du cahier §4 (`scrutins`, `scrutin_totals`, `scrutin_group_votes`, `scrutin_individual_votes`, `scrutin_mises_au_point`), avec les comptages nécessaires aux contrôles d'ALG-05, sans écrire en base et sans rien calculer d'interprétatif.
@@ -136,7 +136,9 @@ Sur fichiers réels : `VTANR5L17V489` → 12 lignes de groupe avec `groupe_id = 
 - Chaque `groupe_id` non nul de `scrutin_group_votes` et de `scrutin_individual_votes` figure dans `groupes_vus` ; chaque `depute_id` figure dans `deputes_vus`.
 - Deux extractions du même `ScrutinNormalise` produisent exactement le même lot.
 
-## Questions à trancher avant de coder
+## Questions (décisions provisoires prises à l'implémentation, à confirmer)
+Retenu au codage, selon les propositions : 1 clé = rang ; 2 colonnes ajoutées (migration `db/migrations/001_init.sql` mise à jour) ; 3 aucun champ non stocké ajouté ; 4 colonne `objet` conservée (fidélité au cahier, coût nul).
+
 1. **Clé de `scrutin_group_votes`** : rang plutôt qu'identifiant, avec `groupe_id` nullable (écart 1). Alternative écartée : générer un identifiant fictif (`PO0#3`), qui introduirait une valeur inventée dans les tables. D'accord ?
 2. **Colonnes ajoutées** (`groupe_rang` dans deux tables, `cause`, `origine`, `etl_version`) : modification d'interface du schéma du cahier. D'accord ?
 3. **Champs non stockés** : veux-tu conserver `type_majorite` (utile pour afficher « majorité requise »), `nbr_suffrages_requis`, `dossier_ref` (utile pour regrouper les votes d'un même texte, cahier §6) ? Je propose de ne rien ajouter tant qu'une page ne les affiche pas.
@@ -147,3 +149,4 @@ Cahier technique §2, §4, §5.2 (règles 3 et 4) et §5.3 ; `docs/algorithmes/A
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- v2 (2026-11-13) : implémentation ; les chiffres de l'archive complète sont reproduits par le test d'intégration (106 524 groupes dont 146 sans identifiant, 1 323 978 votes, 3 243 mises au point et 163 dysfonctionnements).

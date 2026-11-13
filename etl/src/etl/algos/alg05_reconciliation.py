@@ -24,7 +24,7 @@ SEVERITE = {
     "R08": "B", "R09": "B", "R10": "B", "R11": "B", "R12": "I", "R13": "I", "R14": "B",
     "R15": "B", "R16": "B", "R17": "B",
 }  # fmt: skip
-CONTROLES_LOT = {f"R{n:02d}" for n in (1, *range(2, 15))} | {"R16"}
+CONTROLES_LOT = {f"R{n:02d}" for n in range(1, 15)} | {"R16"}
 CONTROLES_BASE = {f"R{n:02d}" for n in (*range(1, 11), 15, 16, 17)}
 
 # Écart de la source : position -> (clé du compteur de groupe, nom côté total)
@@ -248,6 +248,7 @@ def controler(
         raise ValueError(f"niveau inconnu : {niveau!r}")
     index = {e.cle(): e for e in connus}  # ALG-05.5 : correspondance exacte seulement
     rencontres: set[tuple] = set()
+    ids_examines: set[str] = set()
     rapport = RapportReconciliation(niveau=niveau)
     detailles: dict[str, int] = defaultdict(int)
 
@@ -268,6 +269,7 @@ def controler(
     # ALG-05.2 : tous les contrôles applicables, scrutin par scrutin
     for s in scrutins:
         rapport.scrutins_controles += 1
+        ids_examines.add(s.id)
         for controle, rang, detail, attendu, obtenu, est_ecart in _evaluer(s, niveau):
             enregistrer(controle, s.id, rang, detail, attendu, obtenu, est_ecart)
 
@@ -283,8 +285,15 @@ def controler(
                     nb_scrutins_attendu != rapport.scrutins_controles)  # fmt: skip
 
     # ALG-05.6 : entrée du fichier des écarts connus jamais rencontrée
+    # CHOIX: seules les entrées dont le scrutin a été examiné sont concernées
+    # RAISON: un lot partiel (un seul scrutin) ne doit pas déclarer « disparus » les écarts
+    # connus d'autres scrutins qu'il n'a pas regardés
     for cle, e in index.items():
-        if cle not in rencontres and _concerne_ce_niveau(e.controle, niveau):
+        if (
+            cle not in rencontres
+            and _concerne_ce_niveau(e.controle, niveau)
+            and e.scrutin_id in ids_examines
+        ):
             rapport.avertissements.append(
                 f"ecart_connu_disparu : {e.controle} {e.scrutin_id} {e.detail or ''}".strip()
             )
