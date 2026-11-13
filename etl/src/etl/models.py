@@ -150,3 +150,96 @@ class PositionMajoritaire:
     participation_num: int  # E
     participation_den: int  # effectif du groupe (nombreMembresGroupe)
     position_source: str | None = None  # positionMajoritaire de la source, pour audit seulement
+
+
+# --- ALG-04 : lignes prêtes pour SQLite ----------------------------------------------------
+
+
+@dataclass(frozen=True)
+class LigneScrutin:
+    id: str
+    numero: int
+    legislature: int
+    date_scrutin: str
+    titre: str
+    objet: str
+    type_vote_code: str
+    type_vote_libelle: str
+    resultat_code: str
+    source_url: str | None
+    source_hash: str
+    imported_at: str
+    etl_version: str
+
+
+@dataclass(frozen=True)
+class LigneTotaux:
+    scrutin_id: str
+    pour: int
+    contre: int
+    abstentions: int
+    non_votants: int
+    suffrages_exprimes: int
+    nombre_votants: int
+
+
+@dataclass(frozen=True)
+class LigneGroupe:
+    scrutin_id: str
+    rang: int
+    groupe_id: str | None
+    membres: int
+    pour: int
+    contre: int
+    abstentions: int
+    non_votants: int
+    position_majoritaire_source: str
+
+
+@dataclass(frozen=True)
+class LigneVote:
+    scrutin_id: str
+    depute_id: str
+    groupe_rang: int
+    groupe_id: str | None
+    mandat_id: str
+    position: str
+    par_delegation: int  # 0 ou 1
+    cause: str | None
+
+
+@dataclass(frozen=True)
+class LigneMiseAuPoint:
+    scrutin_id: str
+    depute_id: str
+    origine: str  # mise_au_point | dysfonctionnement
+    position_declaree: str
+    par_delegation: int  # 0 ou 1
+    groupe_rang: int | None = None  # renseignés par ALG-06
+    groupe_id: str | None = None
+    position_initiale: str | None = None
+
+
+POSITIONS_VOTE = ("pour", "contre", "abstention", "non_votant")
+
+
+@dataclass(frozen=True)
+class Comptages:
+    """Nombre de lignes de vote produites (et non les compteurs de la source), pour ALG-05."""
+
+    par_groupe: dict[int, dict[str, int]]  # rang -> position -> nombre de lignes
+    scrutin: dict[str, int]  # position -> nombre de lignes
+
+
+@dataclass(frozen=True)
+class LotScrutin:
+    """Sortie d'ALG-04 : toutes les lignes d'un scrutin, triées par clé primaire."""
+
+    scrutin: LigneScrutin
+    totaux: LigneTotaux
+    groupes: list[LigneGroupe]
+    votes: list[LigneVote]
+    mises_au_point: list[LigneMiseAuPoint]
+    groupes_vus: list[str]
+    deputes_vus: list[str]
+    comptages: Comptages
