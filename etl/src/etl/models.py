@@ -136,3 +136,17 @@ class ResultatNormalisation:
     scrutin: ScrutinNormalise | None
     erreurs: list[Anomalie]
     avertissements: list[Anomalie]
+
+
+@dataclass(frozen=True)
+class PositionMajoritaire:
+    """Position majoritaire calculée d'un groupe sur un scrutin (sortie d'ALG-03)."""
+
+    position: str  # pour | contre | abstention | aucune
+    raison_absence: str | None  # aucun_vote_exprime | egalite | None
+    exprimes: int  # E = pour + contre + abstentions
+    effectif_majoritaire: int  # m
+    majorite_absolue: bool  # 2·m > E (faux si aucune position)
+    participation_num: int  # E
+    participation_den: int  # effectif du groupe (nombreMembresGroupe)
+    position_source: str | None = None  # positionMajoritaire de la source, pour audit seulement

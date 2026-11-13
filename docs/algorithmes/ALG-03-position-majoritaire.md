@@ -1,5 +1,5 @@
 # ALG-03 — Position majoritaire d'un groupe sur un scrutin
-Statut : Brouillon    Version : 1    Date : 2026-10-25
+Statut : Brouillon    Version : 2    Date : 2026-11-13
 
 ## But
 Déterminer, pour un groupe et un scrutin, la position la plus fréquente parmi les positions exprimées, ou constater qu'il n'y en a pas, sans jamais utiliser le champ `positionMajoritaire` de la source.
@@ -42,9 +42,11 @@ sinon:
     majorite_absolue = (2 × m > E)                                        [9]
 
 affichage:
-    pour position = "pour":       afficher groupe + " a voté pour (" + m + " sur " + E + ")"
-    pour position = "contre":     afficher groupe + " a voté contre (" + m + " sur " + E + ")"
-    pour position = "abstention": afficher groupe + " s'est abstenu (" + m + " sur " + E + ")"
+    # toujours afficher l'effectif du groupe : « 1 sur 1 exprimé » ne dit pas « 1 membre sur 90 »
+    suffixe = " ; " + E + " exprimés sur " + membres + " membres"
+    pour position = "pour":       afficher groupe + " a voté pour (" + m + " sur " + E + suffixe + ")"
+    pour position = "contre":     afficher groupe + " a voté contre (" + m + " sur " + E + suffixe + ")"
+    pour position = "abstention": afficher groupe + " s'est abstenu (" + m + " sur " + E + suffixe + ")"
     pour position = "aucune":     afficher groupe + " : pas de position majoritaire (" + raison + ")"
     si position ≠ "aucune" et non majorite_absolue:
         ajouter " — majorité relative"
@@ -84,6 +86,9 @@ Formules : `E = P + C + A` ; `m = max(P, C, A)` ; majorité absolue ⇔ `2m > E`
 ## Exemples chiffrés
 Ceux du tableau ci-dessus, plus (vérifié sur les fichiers réels) `VTANR5L17V2066`, groupe `PO845407` : P=12, C=2, A=0 → pour, 12 sur 14 ; la source indique « contre ».
 
+## Règle d'affichage (relecture du 2026-11-13)
+Une position n'est jamais affichée sans son contexte d'effectifs : `m` sur `E` **et** `E` sur l'effectif du groupe. Dire qu'un groupe « a voté pour » alors qu'un seul membre sur 90 s'est exprimé serait trompeur. Le calcul reste inchangé ; la règle s'impose à l'affichage (front, ALG-11).
+
 ## Invariants vérifiés
 - E ≤ nombreMembresGroupe ; sinon alerte de réconciliation (ALG-05).
 - m ≤ E ; m = 0 ⇔ E = 0.
@@ -94,3 +99,4 @@ Ceux du tableau ci-dessus, plus (vérifié sur les fichiers réels) `VTANR5L17V2
 
 ## Historique
 - v1 (2026-10-25) : première rédaction.
+- v2 (2026-11-13) : règle d'affichage avec effectif du groupe ; implémentation (`alg03_position_majoritaire.py`, sortie `PositionMajoritaire`).
