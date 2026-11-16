@@ -60,12 +60,12 @@ def test_ALG_05_fichier_des_ecarts_connus_valide():
         "pas du json",
         "{}",
         '[{"controle": "R07"}]',
-        '[{"controle": "R99", "scrutin_id": "x", "groupe_rang": null, "detail": null,'
-        ' "attendu": 1, "obtenu": 2, "motif": "m", "valide_le": "d", "valide_par": "p"}]',
-        '[{"controle": "R07", "scrutin_id": "x", "groupe_rang": null, "detail": null,'
-        ' "attendu": "1", "obtenu": 2, "motif": "m", "valide_le": "d", "valide_par": "p"}]',
-        '[{"controle": "R07", "scrutin_id": "x", "groupe_rang": null, "detail": null,'
-        ' "attendu": 1, "obtenu": 2, "motif": "", "valide_le": "d", "valide_par": "p"}]',
+        ('[{"controle": "R99", "scrutin_id": "x", "groupe_rang": null, "detail": null,'
+        ' "attendu": 1, "obtenu": 2, "motif": "m", "valide_le": "d", "valide_par": "p"}]'),
+        ('[{"controle": "R07", "scrutin_id": "x", "groupe_rang": null, "detail": null,'
+        ' "attendu": "1", "obtenu": 2, "motif": "m", "valide_le": "d", "valide_par": "p"}]'),
+        ('[{"controle": "R07", "scrutin_id": "x", "groupe_rang": null, "detail": null,'
+        ' "attendu": 1, "obtenu": 2, "motif": "", "valide_le": "d", "valide_par": "p"}]'),
     ],
 )
 def test_ALG_05_fichier_mal_forme_arret(tmp_path, contenu):
@@ -300,7 +300,7 @@ def test_ALG_05_base_nombre_de_scrutins_attendu_r16():
 def test_ALG_05_archive_complete_lot_et_base():
     from etl.pipeline import lire_source
 
-    acceptees, rapport = lire_source(str(DOSSIER_REEL))
+    acceptees, _rapport = lire_source(str(DOSSIER_REEL))
     assert len(acceptees) == 8877
     conn = sqlite3.connect(":memory:")
     conn.execute("PRAGMA foreign_keys = ON")

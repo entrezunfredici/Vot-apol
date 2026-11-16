@@ -141,17 +141,17 @@ Propriétés : mêmes entrées → mêmes octets ; un échec laisse la version p
 - Aucun fichier ne contient d'heure issue de l'horloge d'exécution ni de secret.
 - Aucun champ n'indique une couleur, un rang de groupe ou un score.
 
-## Questions à trancher avant de coder
-1. **Votes individuels** (décision en suspens du 2026-10-22) : je recommande **dans `scrutins/<id>.json`**. Raison chiffrée : un fichier voisin double le nombre de fichiers et dépasserait 20 000 d'ici environ trois mois ; inclus, un fichier fait 3,7 Ko en moyenne et 12,6 Ko au maximum. D'accord ?
-2. **Passage à l'échelle** : même avec les votes inclus, un fichier par scrutin atteint le seuil d'échec de 19 000 fichiers début 2029. Je propose de **garder un fichier par scrutin** (simple, adressable) et de fixer l'alerte à 15 000 fichiers ; si nécessaire, passage à `/data/v2/` avec un regroupement par centaine de numéros. Une alternative est de regrouper dès maintenant ; elle alourdit chaque ouverture de scrutin. Ton avis ?
-3. **Sélections précalculées de `stats.json`** : toutes les sélections (tous les scrutins), et par catégorie ? Par année ? Plus il y en a, plus le fichier grossit (13 groupes seulement, donc modeste).
-4. **Nouveaux fichiers** : `deputes.json` (noms), `qualite.json` (garantie 6), `manifeste.json` (ALG-12), `scrutins-index.json` (liste de fragments). Ils modifient le contrat du cahier §8 : à valider avant tout code.
-5. **Validation des schémas** : la bibliothèque `jsonschema` n'est pas dans la bibliothèque standard ; elle ajouterait une dépendance de développement. Alternative : validateurs écrits à la main dans les tests. Laquelle ?
-6. **Lien officiel d'un scrutin** : je n'ai pas vérifié le modèle d'URL des pages officielles de scrutin ; il doit être confirmé avant d'écrire `source.lien_officiel`. Quel modèle ?
-7. **ALG-14** (vérification indépendante sur fichiers bruts tirés au hasard, garantie 3) : voir ALG-05, question 4.
+## Décisions du 2026-11-14 et questions restantes
+Tranché :
+1. Votes individuels **dans `scrutins/<id>.json`**.
+4. Nouveaux fichiers **acceptés** : `deputes.json`, `qualite.json`, `manifeste.json`, `scrutins-index.json` (contrat du cahier §8 modifié, à reporter dans le cahier).
+5. Validation des schémas par **validateurs écrits à la main** dans les tests (pas de dépendance `jsonschema`).
+
+Restant ouvert : 2. passage à l'échelle (un fichier par scrutin, alerte à 15 000 fichiers) ; 3. sélections précalculées de `stats.json` ; 6. modèle d'URL officielle d'un scrutin ; 7. ALG-14 (voir ALG-05, question 4).
 
 ## Sources et constats
 Cahier technique §3, §8, §10 ; `.agents/CONVENTIONS.md` (« Règles spécifiques export statique et déploiement ») ; `.agents/DECISIONS.md` (2026-10-22 « Site statique », décisions en suspens) ; `docs/methodology.md` (garanties 4 et 6, couleurs, ordre) ; fiches ALG-03, 05, 06, 08, 09, 10 ; mesures du 2026-11-03.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- 2026-11-14 : décisions du responsable (voir « Décisions ») ; statut inchangé.

@@ -58,11 +58,11 @@ Références aux constats de `docs/analyse-donnees-sources.md`, aux décisions d
 | ------ | --------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | ALG-01 | Lecture sécurisée de l'archive (ZIP/dossier, taille, chemins, empreinte)                    | [Validé](ALG-01-lecture-archive.md)         |
 | ALG-02 | Normalisation des valeurs (null / objet / liste, nombres, booléens, dates, positions)        | [Validé](ALG-02-normalisation.md)           |
-| ALG-03 | Calcul de la position majoritaire d'un groupe                                                 | [Brouillon](ALG-03-position-majoritaire.md) |
-| ALG-04 | Extraction d'un scrutin (totaux, groupes, votes nominatifs) | [Brouillon](ALG-04-extraction-scrutin.md) |
-| ALG-05 | Contrôles de réconciliation (totaux, groupes, nominatif) | [Brouillon](ALG-05-reconciliation.md) |
-| ALG-06 | Mises au point (rattachement au groupe, position initiale, effectifs corrigés) | [Brouillon](ALG-06-mises-au-point.md) |
-| ALG-07 | Import idempotent (UPSERT, détection de changement, journal) | [Brouillon](ALG-07-import-idempotent.md) |
+| ALG-03 | Calcul de la position majoritaire d'un groupe                                                 | [Validé](ALG-03-position-majoritaire.md) |
+| ALG-04 | Extraction d'un scrutin (totaux, groupes, votes nominatifs) | [Validé](ALG-04-extraction-scrutin.md) |
+| ALG-05 | Contrôles de réconciliation (totaux, groupes, nominatif) | [Validé](ALG-05-reconciliation.md) |
+| ALG-06 | Mises au point (rattachement au groupe, position initiale, effectifs corrigés) | [Validé](ALG-06-mises-au-point.md) |
+| ALG-07 | Import idempotent (UPSERT, détection de changement, journal) | [Validé](ALG-07-import-idempotent.md) |
 | ALG-08 | Classification des scrutins (catégorie, confiance, « à vérifier ») | [Brouillon](ALG-08-classification.md) |
 | ALG-09 | Résolution des noms (référentiels groupes et députés) ; référentiels à inspecter | [Brouillon](ALG-09-resolution-noms.md) |
 | ALG-10 | Indicateurs de groupe (participation au vote enregistrée, part de la position majoritaire) et comparaison de deux groupes | [Brouillon](ALG-10-indicateurs-groupe.md) |

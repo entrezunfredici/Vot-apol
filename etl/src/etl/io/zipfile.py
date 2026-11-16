@@ -84,7 +84,13 @@ class SourceZip:
         try:
             with self._zip.open(self._infos[nom]) as flux:
                 return flux.read(plafond)
-        except (zipfile.BadZipFile, OSError, EOFError, zipfile.LargeZipFile, NotImplementedError,
-                RuntimeError) as exc:
+        except (
+            zipfile.BadZipFile,
+            OSError,
+            EOFError,
+            zipfile.LargeZipFile,
+            NotImplementedError,
+            RuntimeError,
+        ) as exc:
             # ALG-01.14 : CRC invalide ou flux corrompu
             raise ErreurLecture(str(exc)) from exc

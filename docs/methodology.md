@@ -43,7 +43,7 @@ C'est une majorité **relative** (pluralité) : la position la plus fréquente p
 
 Pour un groupe et un scrutin, il s'agit de `m sur E` : le nombre de membres ayant voté comme la position majoritaire du groupe, sur les positions exprimées. Il n'est défini que si une position majoritaire existe. Ce n'est pas un score : il n'y a pas de seuil ni de qualificatif, et les groupes ne sont jamais classés selon cet indicateur.
 
-Sur plusieurs scrutins, on affiche la répartition brute (par exemple : « sur 120 scrutins, 80 avec au moins 90 % des exprimés sur la position majoritaire »), jamais une moyenne unique.
+Sur plusieurs scrutins, on affiche la répartition brute (par exemple : « sur 120 scrutins, 80 dans la tranche de 80 % à moins de 100 % des exprimés sur la position majoritaire » ; tranches réglables, bornes numériques seules, sans qualificatif), jamais une moyenne unique.
 
 ## Participation au vote enregistrée
 
@@ -97,6 +97,6 @@ Principe : Voteapol rapporte des faits officiels, sans les interpréter. Une err
 7. **Lexique contrôlé.** Les textes de l'interface sont écrits dans un vocabulaire descriptif. Un test automatique refuse des termes évaluatifs (par exemple : cohésion, discipline, dissident, rebelle, frondeur, loyal, sage, extrême).
 8. **Pas de mise en avant éditoriale.** Ordre alphabétique ou chronologique par défaut, jamais par « importance » ; pas de scrutin « à la une » choisi à la main, pas de classement de groupes ou de députés.
 9. **Couleurs.** Les couleurs de vote (pour, contre, abstention, non-votant) sont les seules couleurs sémantiques. Aucune couleur n'est associée à un groupe politique, pour ne pas suggérer une orientation.
-10. **Catégories incertaines signalées.** Une catégorie déduite d'un titre est marquée « à vérifier » ; un filtre ne présente jamais une catégorie incertaine comme une certitude.
+10. **Catégories déduites signalées.** Chaque scrutin conserve l'indication « à vérifier » dans les données ; le filtre indique que les catégories sont déduites des titres officiels, et un scrutin dont la catégorie est indéterminée ou incohérente est signalé individuellement. Aucune catégorie déduite n'est présentée comme une certitude officielle (reformulé le 2026-11-14, voir ALG-08).
 11. **Corrections.** Un moyen de signaler une erreur est affiché sur le site ; les corrections publiées sont datées et conservées dans l'historique.
 12. **Ce que le site n'est pas.** La page « Méthodologie » rappelle qu'il ne note ni n'évalue aucun élu ou groupe, que « contre » ne dit rien de la position sur le thème général d'un texte, et que les scrutins publics ne représentent qu'une partie de l'activité parlementaire.

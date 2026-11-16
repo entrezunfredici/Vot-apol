@@ -160,16 +160,18 @@ Tests sur des rapports construits (aucune donnée parlementaire n'est produite) 
 - Le déploiement ne publie que l'artefact dont le `rapport_sha256` correspond à la décision.
 - Aucun secret n'apparaît dans les rapports ni dans `decision.json`.
 
-## Questions à trancher avant de coder
-1. **Seuils** `SEUIL_MODIFIES = 20` et `SEUIL_NOUVEAUX = 500` : propositions, sans donnée d'observation. Les recaler après quelques semaines de synchronisation ?
-2. **Où vit le manifeste précédent ?** Je propose de le lire dans la version publiée (`/data/v1/manifeste.json`), pas dans la base (la base n'est pas conservée entre deux exécutions, voir ALG-07, question 1). Ajouter `manifeste.json` modifie le contrat de ALG-11 : voir ALG-11, question 4.
-3. **Mode sûr** : je propose que `publier` automatique ne soit autorisé que sur ton instruction explicite, selon `.agents/AGENT.md`. Quand le lèves-tu ?
-4. **Validation** : par un relecteur de l'environnement GitHub (approbation requise), par défaut un seul : toi. D'accord ?
-5. **ALG-14** (vérification indépendante) : si elle est créée, elle devient une règle B de plus (G06).
-6. **Durée de conservation des artefacts** pour la restauration : à fixer avec les limites de GitHub Actions.
+## Décisions du 2026-11-14 et questions restantes
+Tranché :
+1. Seuils `SEUIL_MODIFIES = 20` et `SEUIL_NOUVEAUX = 500` conservés au départ, à recaler après quelques semaines de synchronisation.
+2. Manifeste précédent lu dans la version publiée (`/data/v1/manifeste.json`) : `manifeste.json` est accepté dans le contrat d'ALG-11.
+3. Mode sûr actif au départ ; `publier` automatique **seulement sur instruction explicite** du responsable du projet.
+4. Validation : un seul relecteur (le responsable du projet), par l'approbation d'un environnement GitHub.
+
+Restant ouvert : 5. ALG-14 (si créée, règle B supplémentaire G06) ; 6. durée de conservation des artefacts pour la restauration (limites de GitHub Actions).
 
 ## Sources et constats
 Cahier technique §10 et §11 ; `docs/methodology.md` (garanties 2, 4, 5, 6) ; `.agents/AGENT.md` (« Ce que l'agent NE doit PAS faire », déploiement) ; `.agents/CONVENTIONS.md` (« Règles spécifiques export statique et déploiement ») ; fiches ALG-01, 05, 07, 09, 11, 13.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- 2026-11-14 : décisions du responsable (voir « Décisions ») ; statut inchangé.

@@ -46,9 +46,7 @@ class SourceDossier:
                     if e.is_symlink():
                         # Refusé (motif lien_symbolique) si le nom a la forme d'un scrutin,
                         # ignoré avec compteur sinon : décision prise par ALG-01.
-                        entrees.append(
-                            EntreeBrute(relatif, False, False, True, True, 0, 0)
-                        )
+                        entrees.append(EntreeBrute(relatif, False, False, True, True, 0, 0))
                     elif e.is_dir(follow_symlinks=False):
                         pile.append(Path(nom))
                     elif e.is_file(follow_symlinks=False):

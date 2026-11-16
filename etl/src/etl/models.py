@@ -218,6 +218,8 @@ class LigneMiseAuPoint:
     groupe_rang: int | None = None  # renseignés par ALG-06
     groupe_id: str | None = None
     position_initiale: str | None = None
+    statut_rattachement: str | None = None  # rattachee | introuvable (calculés, non stockés)
+    effet: str | None = None  # sans_effet | modifie_position (None si introuvable)
 
 
 POSITIONS_VOTE = ("pour", "contre", "abstention", "non_votant")
@@ -243,3 +245,27 @@ class LotScrutin:
     groupes_vus: list[str]
     deputes_vus: list[str]
     comptages: Comptages
+
+
+@dataclass(frozen=True)
+class CorrectionGroupe:
+    """Effectifs corrigés d'un groupe par les mises au point (ALG-06, partie B), pour l'affichage."""
+
+    rang: int
+    groupe_id: str
+    pour_corrige: int
+    contre_corrige: int
+    abstentions_corrigees: int
+    position_officielle: str
+    position_corrigee: str
+    raison_absence_corrigee: str | None
+    change_position_majoritaire: bool
+    nb_mises_au_point: int
+
+
+@dataclass(frozen=True)
+class ScrutinRefuse:
+    """Scrutin écarté avant l'import (erreur ALG-02, 04 ou 06) : rien n'est écrit (ALG-07.4)."""
+
+    id: str
+    cause: str

@@ -1,5 +1,5 @@
 # ALG-05 — Contrôles de réconciliation (totaux, groupes, nominatif)
-Statut : Brouillon    Version : 3    Date : 2026-11-13
+Statut : Validé    Version : 3    Date : 2026-11-14
 
 ## But
 Vérifier, scrutin par scrutin, que les chiffres de la source se recoupent entre eux (totaux, groupes, votes nominatifs, résultat), consigner chaque écart sans jamais le corriger ni le masquer, et distinguer les écarts **connus et validés** des écarts **nouveaux**, qui bloquent la publication (garantie 2).
@@ -145,3 +145,4 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 - v1 (2026-11-03) : première rédaction.
 - v3 (2026-11-13) : implémentation ; R11 et R12 réservés au niveau lot ; champ `detail` ; statut `ecarts_informatifs` ; règle de `ecart_connu_disparu` limitée aux scrutins examinés ; R03 ajouté à l'exemple du `pour` modifié.
 - v2 (2026-11-13) : correction après relecture : l'écart du scrutin n° 1 apparaît aussi en R08 (21 lignes nominatives `non_votant` pour 10 au total), pas seulement en R07.
+- Statut passé à « Validé » le 2026-11-14 (demande du responsable du projet), après implémentation et tests.

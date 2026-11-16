@@ -10,6 +10,7 @@ Exclus : le téléchargement (statut HTTP, taille, fraîcheur, URL : fiche à cr
 
 ## Constats sur les données réelles (dossier `Scrutins.json/json`, 8 877 fichiers, vérifiés sur la totalité)
 - 8 877 fichiers, tous nommés `VTANR5L17V<n>.json`, `n` de 1 à 8877 sans trou ni doublon.
+- Archive officielle téléchargée le 2026-11-14 (voir ALG-13) : 9 895 fichiers, numérotés de 1 à 9 895 sans trou, plus gros fichier 61 251 octets, total décompressé 199 357 167 octets, rapport de compression maximal 8,4 ; lecture `complet` par le code ALG-01, aucune entrée refusée. Les chiffres ci-dessous sont ceux de l'état antérieur de 8 877 fichiers.
 - Taille : minimum 7 442 octets, médiane 18 700, 99ᵉ centile 46 708, maximum 61 251 ; total décompressé 180 527 979 octets (environ 172 Mio). L'archive ZIP compressée fait environ 27 Mo.
 - Aucun BOM, aucun octet hors ASCII (les accents sont en séquences `\uXXXX`), tous les fichiers sont du JSON valide, racine unique `scrutin`, `scrutin.uid` identique au nom de fichier, `legislature` valant `"17"` partout.
 - Le dossier extrait n'a pas de fichier hors motif ; une archive ZIP téléchargée peut contenir des entrées de dossier (`json/`).

@@ -1,5 +1,5 @@
 # ALG-07 — Import idempotent (UPSERT, détection de changement, journal)
-Statut : Brouillon    Version : 1    Date : 2026-11-03
+Statut : Validé    Version : 2    Date : 2026-11-14
 
 ## But
 Écrire dans SQLite les lots produits par ALG-04 et ALG-06 de façon que rejouer le même import ne change aucune ligne, qu'un fichier modifié mette à jour son scrutin en entier (sans ligne résiduelle), qu'une donnée valide ne soit jamais remplacée par une donnée partielle, et que chaque exécution laisse un journal exploitable.
@@ -10,7 +10,7 @@ Exclus : lecture de l'archive (ALG-01), construction des lignes (ALG-04), contr�
 
 ## Principes
 - **Une unité atomique = un scrutin.** Toutes ses lignes (scrutin, totaux, groupes, votes, mises au point) sont écrites ou aucune.
-- **La clé de comparaison** est le couple (`source_hash`, `etl_version`) : le premier détecte un changement du fichier source, le second un changement des règles de traitement (ALG-02, 04, 06) qui modifierait les lignes à source égale.
+- **La clé de comparaison** est le couple (`source_hash`, `etl_version`) ; `etl_version` est **calculée** (SHA-256 du contenu des modules ALG-02, ALG-04 et ALG-06, voir décision 2) : le premier détecte un changement du fichier source, le second un changement des règles de traitement (ALG-02, 04, 06) qui modifierait les lignes à source égale.
 - **Jamais de suppression automatique** d'un scrutin déjà en base.
 - La base est un **outil de travail** de l'ETL (décision du 2026-10-22). L'archive reste la source de vérité.
 
@@ -120,15 +120,16 @@ Aucun point de reprise n'est stocké. Rejouer l'import suffit : les scrutins dé
 - `nouveaux + inchanges + modifies + retraites + refuses` = nombre d'entrées acceptées par ALG-01 (`acceptees`) ; `refuses` ne contient ici que les refus de normalisation, d'extraction ou de rattachement (ceux d'ALG-01 sont dans son propre rapport).
 - Toutes les requêtes sont paramétrées.
 
-## Questions à trancher avant de coder
-1. **La base est-elle conservée entre deux exécutions de la CI ?** Je propose que non : la base est reconstruite à chaque synchronisation à partir de l'archive (27 Mo, 8 877 fichiers). Conséquence : « nouveau / modifié » du point de vue d'ALG-07 n'a de sens qu'en local ; la comparaison avec la **version publiée** se fait dans ALG-12 à partir du manifeste public. L'idempotence reste exigée (relances, reprise, usage local).
-2. **`etl_version`** : à incrémenter à chaque nouvelle version d'une fiche ALG-02, 04 ou 06. D'accord pour une valeur manuelle plutôt que calculée ?
-3. **Scrutin absent de l'archive** : jamais supprimé automatiquement, signalé. Veux-tu un mode de suppression explicite (`etl prune`) ou aucun ?
-4. **`TAILLE_LOT = 200`** : valeur raisonnée, à confirmer par une mesure de durée sur la vraie archive.
-5. **Mode `--dry-run`** : utile à ALG-12 ; confirmes-tu que cette commande est ajoutée à la liste du cahier §5.1 (modification d'interface) ?
+## Décisions du 2026-11-14 (questions tranchées)
+1. Base **reconstruite à chaque exécution de la CI** depuis l'archive ; « nouveau / modifié » n'a de sens qu'en local, la comparaison avec la version publiée se fait dans ALG-12. L'idempotence reste exigée (relances, reprise, usage local). **Retenu.**
+2. `etl_version` **calculée**, et non manuelle : SHA-256 du contenu des sources des modules ALG-02, ALG-04 et ALG-06 (fin de ligne normalisée). Contrepartie acceptée : un changement même cosmétique (commentaire) de ces modules déclenche un `retraite` de tous les scrutins. **Retenu (choix du responsable, contre la recommandation d'une valeur manuelle).**
+3. Scrutin absent de l'archive : jamais supprimé automatiquement, seulement signalé ; **aucune commande de suppression**. **Retenu.**
+4. `TAILLE_LOT = 200` : valeur raisonnée, à confirmer par une mesure de durée sur la vraie archive **à l'implémentation** (réglage, non bloquant pour la validation).
+5. Mode `--dry-run` : **ajouté** à la liste des commandes du cahier §5.1 (modification d'interface acceptée). **Retenu.**
 
 ## Sources et constats
 Cahier technique §4 (`imports`), §5.2 (règles 5, 6, 8, 9, 10), §5.3 (tests de réimport et d'import d'un fichier modifié) ; `.agents/AGENT.md` (« Gestion d'erreurs ») ; `.agents/CONVENTIONS.md` (« Règles de données ») ; fiches ALG-01, 04, 05, 06.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- v2 (2026-11-14) : questions tranchées par le responsable du projet ; `etl_version` calculée ; statut « Validé ».

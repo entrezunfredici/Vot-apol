@@ -230,9 +230,7 @@ def _lire_corrections(
     for cle, position in table.items():
         for i, brut in enumerate(aplatir_votants(noeud.get(cle), ctx, f"{chemin}.{cle}")):
             ch = f"{chemin}.{cle}[{i}]"
-            v = objet(
-                brut, ("acteurRef", "mandatRef", "parDelegation"), ("numPlace",), ctx, ch
-            )
+            v = objet(brut, ("acteurRef", "mandatRef", "parDelegation"), ("numPlace",), ctx, ch)
             if v is None:
                 continue
             acteur, mandat, delegation = _lire_votant(v, ctx, ch)
@@ -258,7 +256,10 @@ def _lire_groupe(
 
     # ALG-02.14 : vote ; positionMajoritaire conservée pour audit uniquement
     vote = objet(
-        g["vote"], ("positionMajoritaire", "decompteVoix", "decompteNominatif"), (), ctx,
+        g["vote"],
+        ("positionMajoritaire", "decompteVoix", "decompteNominatif"),
+        (),
+        ctx,
         f"{chemin}.vote",
     )
     if vote is None:
@@ -268,7 +269,8 @@ def _lire_groupe(
         position_source = position_source.lower()
         if position_source not in POSITIONS_MAJORITAIRES:
             ctx.warn(
-                f"{chemin}.vote.positionMajoritaire", "position_majoritaire_inconnue",
+                f"{chemin}.vote.positionMajoritaire",
+                "position_majoritaire_inconnue",
                 position_source,
             )
 
@@ -316,8 +318,9 @@ def _lire_groupe(
                     if v.get("causePositionVote") is None:
                         ctx.warn(ch, "non_votant_sans_cause")
                     else:
-                        cause = enum_ferme(v["causePositionVote"], TABLE_CAUSE, ctx,
-                                           f"{ch}.causePositionVote")
+                        cause = enum_ferme(
+                            v["causePositionVote"], TABLE_CAUSE, ctx, f"{ch}.causePositionVote"
+                        )
                 elif v.get("causePositionVote") is not None:
                     ctx.err(ch, "cause_incoherente", position)
                 if acteur and mandat and delegation is not None:
@@ -326,12 +329,7 @@ def _lire_groupe(
     # ALG-02.19 : tri déterministe (position, acteur_ref)
     votants.sort(key=lambda x: (_ORDRE_POSITION[x.position], x.acteur_ref))
 
-    if (
-        membres is None
-        or position_source is None
-        or voix is None
-        or None in compteurs.values()
-    ):
+    if membres is None or position_source is None or voix is None or None in compteurs.values():
         return None
     return GroupeNormalise(
         rang=rang,
@@ -366,7 +364,8 @@ def normaliser_scrutin(document: Any) -> ResultatNormalisation:
 
     # ALG-02.1 : racine exactement {"scrutin": {...}}
     if not (
-        isinstance(document, dict) and set(document) == {"scrutin"}
+        isinstance(document, dict)
+        and set(document) == {"scrutin"}
         and isinstance(document["scrutin"], dict)
     ):
         ctx.err("", "structure", "racine différente de {'scrutin': {...}}")
@@ -399,13 +398,17 @@ def normaliser_scrutin(document: Any) -> ResultatNormalisation:
 
     # ALG-02.5 : type de vote
     tv = objet(
-        s["typeVote"], ("codeTypeVote", "libelleTypeVote", "typeMajorite"), (), ctx,
+        s["typeVote"],
+        ("codeTypeVote", "libelleTypeVote", "typeMajorite"),
+        (),
+        ctx,
         "scrutin.typeVote",
     )
     type_code = type_libelle = type_majorite = None
     if tv is not None:
-        type_code = enum_ferme(tv["codeTypeVote"], TABLE_TYPE_VOTE, ctx,
-                               "scrutin.typeVote.codeTypeVote")
+        type_code = enum_ferme(
+            tv["codeTypeVote"], TABLE_TYPE_VOTE, ctx, "scrutin.typeVote.codeTypeVote"
+        )
         type_libelle = texte(tv["libelleTypeVote"], ctx, "scrutin.typeVote.libelleTypeVote")
         type_majorite = texte(tv["typeMajorite"], ctx, "scrutin.typeVote.typeMajorite")
 
@@ -419,22 +422,36 @@ def normaliser_scrutin(document: Any) -> ResultatNormalisation:
     # ALG-02.7 : titre, objet, dossier législatif (null = cas normal, non signalé)
     titre = texte(s["titre"], ctx, "scrutin.titre")
     ob = objet(
-        s["objet"], ("libelle",), ("dossierLegislatif", "referenceLegislative"), ctx,
+        s["objet"],
+        ("libelle",),
+        ("dossierLegislatif", "referenceLegislative"),
+        ctx,
         "scrutin.objet",
     )
     objet_libelle = dossier_ref = dossier_libelle = None
     if ob is not None:
         objet_libelle = texte(ob["libelle"], ctx, "scrutin.objet.libelle")
         if ob.get("dossierLegislatif") is not None:
-            dl = objet(ob["dossierLegislatif"], ("dossierRef", "libelle"), (), ctx,
-                       "scrutin.objet.dossierLegislatif")
+            dl = objet(
+                ob["dossierLegislatif"],
+                ("dossierRef", "libelle"),
+                (),
+                ctx,
+                "scrutin.objet.dossierLegislatif",
+            )
             if dl is not None:
-                dossier_ref = texte(dl["dossierRef"], ctx, "scrutin.objet.dossierLegislatif.dossierRef")
-                dossier_libelle = texte(dl["libelle"], ctx, "scrutin.objet.dossierLegislatif.libelle")
+                dossier_ref = texte(
+                    dl["dossierRef"], ctx, "scrutin.objet.dossierLegislatif.dossierRef"
+                )
+                dossier_libelle = texte(
+                    dl["libelle"], ctx, "scrutin.objet.dossierLegislatif.libelle"
+                )
 
     # ALG-02.8 : demandeur (texte null dans 30 scrutins : cas normal)
     de = objet(s["demandeur"], (), ("texte", "referenceLegislative"), ctx, "scrutin.demandeur")
-    demandeur_texte = texte(de.get("texte"), ctx, "scrutin.demandeur.texte", requis=False) if de else None
+    demandeur_texte = (
+        texte(de.get("texte"), ctx, "scrutin.demandeur.texte", requis=False) if de else None
+    )
 
     # ALG-02.9 : seul le mode « DecompteNominatif » est géré
     mode = texte(s["modePublicationDesVotes"], ctx, "scrutin.modePublicationDesVotes")
@@ -468,7 +485,9 @@ def normaliser_scrutin(document: Any) -> ResultatNormalisation:
     groupes_bruts: list[Any] = []
     chemin_v = "scrutin.ventilationVotes"
     vv = objet(s["ventilationVotes"], ("organe",), (), ctx, chemin_v)
-    org = objet(vv["organe"], ("organeRef", "groupes"), (), ctx, f"{chemin_v}.organe") if vv else None
+    org = (
+        objet(vv["organe"], ("organeRef", "groupes"), (), ctx, f"{chemin_v}.organe") if vv else None
+    )
     gs = objet(org["groupes"], ("groupe",), (), ctx, f"{chemin_v}.organe.groupes") if org else None
     if gs is not None:
         noeud = gs["groupe"]
@@ -484,7 +503,9 @@ def normaliser_scrutin(document: Any) -> ResultatNormalisation:
     # ALG-02.12 à 19 : chaque groupe, rang = position dans le fichier (1, 2, …)
     groupes: list[GroupeNormalise] = []
     for rang, brut in enumerate(groupes_bruts, start=1):
-        groupe = _lire_groupe(brut, rang, ctx, f"{chemin_v}.organe.groupes.groupe[{rang - 1}]", numero)
+        groupe = _lire_groupe(
+            brut, rang, ctx, f"{chemin_v}.organe.groupes.groupe[{rang - 1}]", numero
+        )
         if groupe is not None:
             groupes.append(groupe)
 
@@ -506,11 +527,19 @@ def normaliser_scrutin(document: Any) -> ResultatNormalisation:
         mises_au_point = _lire_corrections(
             mp, TABLE_MISE_AU_POINT, "mise_au_point", ctx, "scrutin.miseAuPoint"
         )
-        dys = objet(mp["dysfonctionnement"], tuple(TABLE_DYSFONCTIONNEMENT), (), ctx,
-                    "scrutin.miseAuPoint.dysfonctionnement")
+        dys = objet(
+            mp["dysfonctionnement"],
+            tuple(TABLE_DYSFONCTIONNEMENT),
+            (),
+            ctx,
+            "scrutin.miseAuPoint.dysfonctionnement",
+        )
         if dys is not None:
             dysfonctionnements = _lire_corrections(
-                dys, TABLE_DYSFONCTIONNEMENT, "dysfonctionnement", ctx,
+                dys,
+                TABLE_DYSFONCTIONNEMENT,
+                "dysfonctionnement",
+                ctx,
                 "scrutin.miseAuPoint.dysfonctionnement",
             )
 

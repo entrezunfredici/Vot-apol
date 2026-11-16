@@ -1,5 +1,5 @@
 # ALG-13 — Téléchargement de l'archive (URL, statut HTTP, taille, fraîcheur, comparaison d'empreinte)
-Statut : Brouillon    Version : 1    Date : 2026-11-03
+Statut : Brouillon    Version : 2    Date : 2026-11-14
 
 ## But
 Récupérer l'archive officielle des scrutins en s'assurant qu'on a bien reçu **une archive complète, depuis la source prévue**, en conserver la provenance, et dire si elle diffère de ce qui est déjà publié, avant de lui appliquer ALG-01. Un téléchargement douteux ne produit aucune archive.
@@ -9,9 +9,11 @@ Inclus : validation de l'adresse, requête, redirections, nouvelles tentatives, 
 Exclus : contrôle du contenu du ZIP (ALG-01), décision de déployer (ALG-12), téléchargement des référentiels de noms (même fonction, autre adresse, voir ALG-09), usage hors ligne (l'option `--zip` de l'ETL ne passe pas par cette fiche et n'ouvre aucune connexion, cahier §5.2 règle 9).
 
 ## Constats
-- L'archive reçue pour le projet fait environ 27 Mo (8 877 entrées) ; elle a été fournie par le porteur du projet, **l'adresse officielle de téléchargement n'est pas connue ni vérifiée** (question 1).
-- La source ne fournit, à ma connaissance, ni empreinte publiée ni signature : l'intégrité se limite à la taille annoncée, à la vérification du format et au contrôle de cohérence d'ALG-01 et ALG-05. Cette hypothèse reste à vérifier sur la page de la source.
-- Une exécution par jour suffit (cahier §10) : l'archive n'est demandée qu'une fois par exécution, sans requête conditionnelle (la comparaison par empreinte fait foi ; 27 Mo par jour ne justifie pas la complexité d'un en-tête `ETag` dont la fiabilité n'est pas établie).
+- **Adresse officielle vérifiée le 2026-11-14** : `https://data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip`, publiée sur la page « Votes » de data.assemblee-nationale.fr (licence : Licence Ouverte / Open Licence, mention de la paternité obligatoire). L'adresse `http` répond `301` vers la même adresse en `https`, même hôte. Hôte autorisé : `data.assemblee-nationale.fr` (aucune redirection vers un autre hôte observée).
+- **Archive observée le 2026-11-14** : 30 518 412 octets (environ 29 Mio), `Content-Type: application/zip`, `Content-Length`, `Last-Modified` et `ETag` présents, `Accept-Ranges: bytes` ; 9 895 entrées `json/VTANR5L17V<n>.json`, numérotées de 1 à 9 895 sans trou ; la lecture par ALG-01 donne `complet`, aucune entrée refusée. L'archive de 8 877 scrutins sur laquelle les fiches ont été mesurées est un état antérieur.
+- **Empreinte publiée** : la page affiche une empreinte **MD5** (`5f577277…`) et une date de mise à jour ; le fichier téléchargé a la même empreinte. L'empreinte n'est lisible que dans la page (pas dans un en-tête) : on ne s'en sert pas (pas de lecture de page web, décision du 2026-10-22 « pas de scraping »), et MD5 ne protégerait de toute façon que contre une corruption. Aucune signature n'est publiée.
+- L'intégrité se limite donc à la taille annoncée, à la vérification du format et au contrôle de cohérence d'ALG-01 et ALG-05.
+- Une exécution par jour suffit (cahier §10) : l'archive n'est demandée qu'une fois par exécution, sans requête conditionnelle (la comparaison par empreinte fait foi ; 29 Mio par jour ne justifie pas la complexité d'un en-tête `ETag`, présent mais dont la fiabilité n'est pas établie).
 
 ## Entrées / Sorties
 - Entrées : `url` (variable de configuration, jamais en dur), `hotes_autorises` (liste), `url_meta_publie` (adresse du `meta.json` de la version publiée, variable de configuration, sur un hôte autorisé ; l'étape 2 en tire `empreinte_publiee`, qui vaut `null` seulement si la version publiée n'existe pas), `repertoire_archives`, `telechargee_le` (horodatage UTC fourni par l'appelant), paramètres de limites.
@@ -20,13 +22,26 @@ Exclus : contrôle du contenu du ZIP (ALG-01), décision de déployer (ALG-12), 
 ## Paramètres (propositions, à recaler)
 | Paramètre | Valeur | Justification |
 |-----------|--------|---------------|
-| `MAX_OCTETS_TELECHARGEMENT` | 200 Mio | Environ 7 fois la taille observée (27 Mo) ; borne le disque et la durée en cas de réponse anormale |
-| `MIN_OCTETS_TELECHARGEMENT` | 10 Mio | Environ 37 % de la taille observée ; une réponse bien plus petite est une page d'erreur ou une archive tronquée |
+| `MAX_OCTETS_TELECHARGEMENT` | 200 Mio | Environ 7 fois la taille observée (29 Mio) ; borne le disque et la durée en cas de réponse anormale |
+| `MIN_OCTETS_TELECHARGEMENT` | 10 Mio | Environ 34 % de la taille observée ; une réponse bien plus petite est une page d'erreur ou une archive tronquée |
 | `MAX_REDIRECTIONS` | 5 | Au-delà : boucle ou configuration anormale |
 | `DELAI_CONNEXION` / `DELAI_INACTIVITE` | 30 s / 60 s | Un serveur qui ne répond plus ne doit pas bloquer l'exécution |
-| `DELAI_TOTAL` | 15 min | Environ 30 fois la durée attendue pour 27 Mo à débit modeste |
+| `DELAI_TOTAL` | 15 min | Environ 30 fois la durée attendue pour 29 Mio à débit modeste (téléchargement réel : quelques secondes) |
 | `MAX_TENTATIVES` | 3, attentes de 10 s puis 60 s | Absorber une panne brève sans insister auprès d'un service public |
 | `FRAICHEUR_JOURS` | 90 | Avertissement seulement : le Parlement suspend ses travaux jusqu'à plusieurs semaines |
+
+### Profil « référentiels de noms » (ALG-09)
+Même fonction, mêmes étapes, paramètres propres :
+
+| Paramètre | Valeur | Justification |
+|-----------|--------|---------------|
+| `url` | `https://data.assemblee-nationale.fr/static/openData/repository/17/amo/tous_acteurs_mandats_organes_xi_legislature/AMO30_tous_acteurs_tous_mandats_tous_organes_historique.json.zip` | AMO30 (acteurs, mandats et organes, historique) |
+| `hotes_autorises` | `data.assemblee-nationale.fr` | même hôte |
+| `MAX_OCTETS_TELECHARGEMENT` | 100 Mio | environ 7 fois la taille observée (13,7 Mio) |
+| `MIN_OCTETS_TELECHARGEMENT` | 5 Mio | environ 36 % de la taille observée |
+| autres paramètres | ceux de l'archive des scrutins | pas de raison de les distinguer |
+
+L'archive est conservée sous son SHA-256 comme celle des scrutins ; la décision « rien à faire » du référentiel est portée par l'empreinte composite d'ALG-12 (empreintes des référentiels).
 
 ## Algorithme logique (vue d'ensemble)
 Lecture en langage naturel ; `[k]` renvoie aux étapes du tableau suivant, qui fait foi. Un téléchargement douteux ne laisse aucune archive.
@@ -120,15 +135,19 @@ Les tests utilisent un **serveur HTTP local** de test (aucun accès au réseau p
 - Aucune requête n'est faite hors de `hotes_autorises` ; aucun certificat n'est ignoré ; aucun secret n'est envoyé ni journalisé.
 - La fonction n'est pas appelée en mode hors ligne.
 
-## Questions à trancher avant de coder
-1. **Adresse officielle** de l'archive des scrutins et hôtes autorisés : à fournir ou à confirmer (je n'ai pas vérifié l'adresse de la source) ; indiquer aussi si la source publie une empreinte ou un horodatage.
-2. **Comparaison avec la version publiée** : elle suppose que `meta.json` est lisible en ligne. Au premier déploiement, aucune version n'existe (`null`). D'accord ?
-3. **Seuils de taille et de fraîcheur** : propositions raisonnées à partir d'une seule archive ; à recaler après quelques téléchargements réels.
-4. **Conservation des archives** : `data/archives/` est ignoré par Git. En CI, conserver l'archive comme artefact d'exécution pendant combien de jours (provenance et audit, cahier §5.2 règle 10) ?
-5. **Référentiels de noms** (ALG-09) : même fonction avec une adresse et des seuils propres ? Les seuils de taille sont à définir à partir des vrais fichiers.
+## Décisions du 2026-11-14 et questions restantes
+Tranché :
+1. Adresse officielle et hôte autorisé : voir « Constats » ; la source publie un horodatage (`Last-Modified`, date de la page) et une empreinte MD5 (page seulement, non utilisée).
+3. Seuils de taille et de fraîcheur : conservés, ils sont cohérents avec l'archive observée (à recaler après quelques téléchargements).
+5. Référentiels de noms : même fonction, profil propre (ci-dessus).
+
+Restant ouvert :
+2. **Comparaison avec la version publiée** : elle suppose que `meta.json` est lisible en ligne ; au premier déploiement, aucune version n'existe (`null`). D'accord ?
+4. **Conservation des archives en CI** : combien de jours (provenance et audit, cahier §5.2 règle 10) ? Proposition : 30 jours pour l'archive des scrutins, 30 pour le référentiel.
 
 ## Sources et constats
 Cahier technique §5.2 (règles 9 et 10), §10 (points 1, 2 et 6) ; `.agents/DECISIONS.md` (2026-10-22 « Source : open data officiel, pas de scraping ») ; `docs/methodology.md` (garantie 4) ; `.agents/CONVENTIONS.md` (bibliothèque standard en priorité) ; fiches ALG-01, 04, 12.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- v2 (2026-11-14) : adresse officielle vérifiée, archive téléchargée et lue (9 895 scrutins), en-têtes observés, profil des référentiels de noms.

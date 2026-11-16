@@ -7,6 +7,7 @@ Chaque bloc de code est précédé de « # ALG-01.k : <résumé> ».
 """
 
 import hashlib
+import itertools
 import json
 import re
 from dataclasses import dataclass
@@ -229,12 +230,9 @@ def lire_archive(
             continue
         hachage = hashlib.sha256(octets).hexdigest()
         hachages[nom] = hachage
-        ratio_excessif = (
-            len(octets) > 0
-            and (
-                entree.taille_compressee == 0
-                or len(octets) / entree.taille_compressee > limites.max_ratio
-            )
+        ratio_excessif = len(octets) > 0 and (
+            entree.taille_compressee == 0
+            or len(octets) / entree.taille_compressee > limites.max_ratio
         )
         if (
             len(octets) > limites.max_octets_entree
@@ -274,7 +272,7 @@ def lire_archive(
         # l'intervalle ; seuls les `max_trous_detailles` premiers sont détaillés
         # RAISON: deux scrutins numérotés 1 et 10⁹ ne doivent pas construire 10⁹ entiers
         numeros = sorted(presents)
-        for avant, apres in zip(numeros, numeros[1:], strict=False):
+        for avant, apres in itertools.pairwise(numeros):
             ecart = apres - avant - 1
             if ecart <= 0:
                 continue

@@ -1,5 +1,5 @@
 # ALG-03 — Position majoritaire d'un groupe sur un scrutin
-Statut : Brouillon    Version : 2    Date : 2026-11-13
+Statut : Validé    Version : 2    Date : 2026-11-14
 
 ## But
 Déterminer, pour un groupe et un scrutin, la position la plus fréquente parmi les positions exprimées, ou constater qu'il n'y en a pas, sans jamais utiliser le champ `positionMajoritaire` de la source.
@@ -100,3 +100,4 @@ Une position n'est jamais affichée sans son contexte d'effectifs : `m` sur `E` 
 ## Historique
 - v1 (2026-10-25) : première rédaction.
 - v2 (2026-11-13) : règle d'affichage avec effectif du groupe ; implémentation (`alg03_position_majoritaire.py`, sortie `PositionMajoritaire`).
+- Statut passé à « Validé » le 2026-11-14 (demande du responsable du projet), après implémentation et tests.

@@ -1,5 +1,5 @@
 # ALG-04 — Extraction d'un scrutin (totaux, groupes, votes nominatifs)
-Statut : Brouillon    Version : 2    Date : 2026-11-13
+Statut : Validé    Version : 2    Date : 2026-11-14
 
 ## But
 Projeter un `ScrutinNormalise` (sortie d'ALG-02) en lignes prêtes à être écrites dans les tables du cahier §4 (`scrutins`, `scrutin_totals`, `scrutin_group_votes`, `scrutin_individual_votes`, `scrutin_mises_au_point`), avec les comptages nécessaires aux contrôles d'ALG-05, sans écrire en base et sans rien calculer d'interprétatif.
@@ -150,3 +150,4 @@ Cahier technique §2, §4, §5.2 (règles 3 et 4) et §5.3 ; `docs/algorithmes/A
 ## Historique
 - v1 (2026-11-03) : première rédaction.
 - v2 (2026-11-13) : implémentation ; les chiffres de l'archive complète sont reproduits par le test d'intégration (106 524 groupes dont 146 sans identifiant, 1 323 978 votes, 3 243 mises au point et 163 dysfonctionnements).
+- Statut passé à « Validé » le 2026-11-14 (demande du responsable du projet), après implémentation et tests.

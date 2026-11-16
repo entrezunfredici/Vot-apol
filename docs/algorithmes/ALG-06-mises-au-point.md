@@ -1,5 +1,5 @@
 # ALG-06 — Mises au point : rattachement au groupe et à la position initiale, effectifs corrigés
-Statut : Brouillon    Version : 1    Date : 2026-11-03
+Statut : Validé    Version : 2    Date : 2026-11-14
 
 ## But
 Pour chaque rectification de vote déclarée après le scrutin (`miseAuPoint`) : retrouver, dans les votes nominatifs du même scrutin, le groupe du député et sa position enregistrée ; puis, pour l'affichage, calculer les effectifs corrigés d'un groupe et dire si la position majoritaire change. Les chiffres officiels ne sont jamais modifiés, et un député introuvable n'est jamais rattaché par déduction.
@@ -113,15 +113,16 @@ Mesures sur l'archive réelle (à confirmer par le test d'intégration) : 2 389 
 - `rattachee + introuvable` = nombre de lignes de `scrutin_mises_au_point`.
 - Une ligne `introuvable` n'a jamais de groupe ni de position initiale.
 
-## Questions à trancher avant de coder
-1. **Position `non_votant_volontaire` déclarée** : je la traite comme « n'a pas pris part au vote », donc retirée des positions exprimées sans être ajoutée ailleurs. Autre lecture possible : à écarter. Cette lecture engage l'affichage. D'accord ?
-2. **Dysfonctionnements** : stockés et affichés dans un bloc distinct, non appliqués aux effectifs corrigés (décision du 2026-10-22 : « à étudier »). Sur les données : 148 sur 163 sont introuvables. D'accord pour ne jamais les appliquer ?
-3. **Colonne `groupe_rang`** à ajouter à `scrutin_mises_au_point` : un groupe `PO0` ne peut pas être désigné par `groupe_id` (ALG-04). D'accord ?
-4. **Mises au point d'un député « sans vote enregistré »** (854 introuvables) : elles restent hors de tout groupe. On ne cherche pas à les rattacher par l'affiliation actuelle, par décision du projet. Confirmes-tu ?
-5. **Effectifs de non-votants (n)** : non recalculés après correction. Le site n'affiche les effectifs corrigés que pour pour, contre, abstention. D'accord ?
+## Décisions du 2026-11-14 (questions tranchées)
+1. `non_votant_volontaire` déclarée : « n'a pas pris part au vote », retirée des positions exprimées sans être ajoutée ailleurs. **Retenu.**
+2. Dysfonctionnements : stockés et affichés dans un bloc distinct, **jamais appliqués** aux effectifs corrigés. **Retenu.**
+3. Colonne `groupe_rang` sur `scrutin_mises_au_point` : déjà en place (migration `001_init.sql`). **Retenu.**
+4. Mises au point d'un député « sans vote enregistré » : restent hors de tout groupe, sans rattachement par l'affiliation actuelle. **Retenu.**
+5. Effectifs de non-votants (n) : non recalculés après correction. **Retenu.**
 
 ## Sources et constats
 `docs/methodology.md` (« Mises au point »), `.agents/DECISIONS.md` (2026-10-22 « Mises au point »), cahier technique §4 (`scrutin_mises_au_point`), `docs/algorithmes/ALG-02-normalisation.md` (étapes 21 et 22), `docs/algorithmes/ALG-03-position-majoritaire.md`, mesures du 2026-11-03.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- v2 (2026-11-14) : questions tranchées par le responsable du projet ; statut « Validé ».

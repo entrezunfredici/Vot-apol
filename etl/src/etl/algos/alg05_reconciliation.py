@@ -96,7 +96,9 @@ class EcartConnu:
 class RapportReconciliation:
     niveau: str
     scrutins_controles: int = 0
-    controles: dict[str, dict[str, int]] = field(default_factory=dict)  # id -> nb_verifies/nb_ecarts
+    controles: dict[str, dict[str, int]] = field(
+        default_factory=dict
+    )  # id -> nb_verifies/nb_ecarts
     ecarts: list[Ecart] = field(default_factory=list)  # détail plafonné par contrôle
     avertissements: list[str] = field(default_factory=list)
     statut: str = "ok"  # ok | ecarts_connus | ecarts_informatifs | ecarts_nouveaux
@@ -129,7 +131,9 @@ def charger_ecarts_connus(chemin: Path | str) -> list[EcartConnu]:
         for nom in ("attendu", "obtenu"):
             if isinstance(e[nom], bool) or not isinstance(e[nom], int):
                 raise ErreurEcartsConnus(f"entrée {i} : {nom} doit être un entier")
-        if not all(isinstance(e[nom], str) and e[nom] for nom in ("motif", "valide_le", "valide_par")):
+        if not all(
+            isinstance(e[nom], str) and e[nom] for nom in ("motif", "valide_le", "valide_par")
+        ):
             raise ErreurEcartsConnus(f"entrée {i} : motif, valide_le et valide_par obligatoires")
         resultat.append(EcartConnu(**e))
     return resultat
@@ -219,7 +223,14 @@ def _evaluer(s: ScrutinAControler, niveau: str):
             # R12 : hors motion de censure, R = ⌊X / 2⌋ + 1 (informatif)
             if s.type_vote_code != "MOC":
                 attendu = s.suffrages_exprimes // 2 + 1
-                yield "R12", None, None, attendu, s.nbr_suffrages_requis, attendu != s.nbr_suffrages_requis
+                yield (
+                    "R12",
+                    None,
+                    None,
+                    attendu,
+                    s.nbr_suffrages_requis,
+                    attendu != s.nbr_suffrages_requis,
+                )
         if s.non_votants_volontaires is not None:
             # R13 : total des non-votants volontaires du scrutin = 0
             yield "R13", None, None, 0, s.non_votants_volontaires, s.non_votants_volontaires != 0
@@ -227,8 +238,14 @@ def _evaluer(s: ScrutinAControler, niveau: str):
             if g.abstentions_doublon_source is not None:
                 # R14 : le doublon de la source égale les abstentions du groupe
                 a = g.compteurs["abstention"]
-                yield "R14", g.rang, None, a, g.abstentions_doublon_source, (
-                    a != g.abstentions_doublon_source)
+                yield (
+                    "R14",
+                    g.rang,
+                    None,
+                    a,
+                    g.abstentions_doublon_source,
+                    (a != g.abstentions_doublon_source),
+                )
     else:
         # R15 : toute référence de groupe ou de député existe dans sa table
         yield "R15", None, None, 0, s.references_orphelines, s.references_orphelines != 0

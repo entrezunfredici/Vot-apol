@@ -13,6 +13,8 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("import")
     s.add_argument("--zip", required=True)
     s.add_argument("--db", required=True)
+    s.add_argument("--dry-run", action="store_true", help="compare sans rien écrire (ALG-07.16)")
+    s.add_argument("--journal-dir", default=None)
     s = sub.add_parser("validate")
     s.add_argument("--db", required=True)
     s = sub.add_parser("export")
@@ -20,11 +22,9 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--out", required=True)
     a = p.parse_args(argv)
     if a.cmd == "inspect":
-        pipeline.run_inspect(a.zip)
-    elif a.cmd == "import":
-        pipeline.run_import(a.zip, a.db)
-    elif a.cmd == "validate":
-        pipeline.run_validate(a.db)
-    elif a.cmd == "export":
-        pipeline.run_export(a.db, a.out)
-    return 0
+        return pipeline.run_inspect(a.zip)
+    if a.cmd == "import":
+        return pipeline.run_import(a.zip, a.db, a.dry_run, a.journal_dir)
+    if a.cmd == "validate":
+        return pipeline.run_validate(a.db)
+    return pipeline.run_export(a.db, a.out)
