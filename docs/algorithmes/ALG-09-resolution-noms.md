@@ -1,5 +1,5 @@
 # ALG-09 — Résolution des noms (référentiels des groupes et des députés)
-Statut : Brouillon    Version : 2    Date : 2026-11-14
+Statut : Validé    Version : 3    Date : 2026-11-18
 
 > **Référentiels inspectés le 2026-11-14** (voir « Constats sur les référentiels »). Les noms de champs, la structure et les chiffres de cette fiche viennent de cette inspection.
 
@@ -20,7 +20,7 @@ Exclus : lecture sécurisée de l'archive (réutilise ALG-01, voir question 2), 
 Source : fichier officiel « Acteurs, mandats et organes, historique » (AMO30), `https://data.assemblee-nationale.fr/static/openData/repository/17/amo/tous_acteurs_mandats_organes_xi_legislature/AMO30_tous_acteurs_tous_mandats_tous_organes_historique.json.zip`. Publié sur data.assemblee-nationale.fr avec une date de mise à jour (2026-11-14 02:34) et une empreinte **MD5** affichée sur la page (`2f43c427…`) ; le fichier téléchargé a la même empreinte. Licence : Licence Ouverte / Open Licence (mention de la paternité obligatoire).
 - **Archive** : ZIP de 13 736 513 octets, 14 059 entrées, 96 081 594 octets décompressés ; plus gros fichier 364 530 octets, rapport de compression maximal 26,2 ; trois dossiers : `json/organe/PO<n>.json` (10 824), `json/acteur/PA<n>.json` (3 176), `json/deport/…` (59). Un fichier par identifiant ; UTF-8. Les limites d'ALG-01 (50 000 entrées, 5 Mio par entrée, 1 Gio au total, ratio 100) conviennent ; **le motif de nom d'ALG-01 ne convient pas** (question 2).
 - **Groupes** : un organe est un groupe parlementaire si `organe.codeType = "GP"` (type `GroupePolitique_type`). Champs : `organe.uid` (identique au nom de fichier), `organe.libelle` (libellé complet), `organe.libelleAbrege` (sigle), `organe.libelleAbrev` (variante en capitales, non utilisée), `organe.viMoDe.dateDebut` et `dateFin` (période d'existence), `organe.legislature = "17"`.
-- **Députés** : `acteur.uid` est un objet `{"#text": "PA…"}` ; nom et prénom dans `acteur.etatCivil.ident.nom` et `.prenom` (civilité `civ` disponible, non utilisée). Le fichier contient aussi, pour chaque acteur, la date et le lieu de naissance, des adresses postales et électroniques, des numéros de téléphone, la profession, les mandats : **aucune de ces données n'est lue ni publiée** (minimisation).
+- **Députés** : `acteur.uid` est un objet `{"#text": "PA…"}` ; nom et prénom dans `acteur.etatCivil.ident.nom` et `.prenom` (civilité `civ` : `M.` ou `Mme`, utilisée depuis la décision du 2026-11-18). Le fichier contient aussi, pour chaque acteur, la date et le lieu de naissance, des adresses postales et électroniques, des numéros de téléphone, la profession, les mandats : **aucune de ces données n'est lue ni publiée** (minimisation).
 - **Couverture** : les 13 groupes réels de l'archive des scrutins sont tous présents (type `GP`) ; `PO0` est **absent** du référentiel, comme prévu (il ne désigne aucun organe). Les 652 députés des votes sont tous présents.
 - **Qualité** : aucun nom ou prénom vide ; aucun libellé ou sigle de groupe vide ; aucun texte hors NFC ni avec espaces de début, de fin ou doubles ; aucun homonyme complet (nom + prénom) parmi les 652 ; caractères non alphabétiques dans les noms : apostrophe (2), parenthèses (2 + 2), barre oblique (1).
 - **Libellés datés** : chaque identifiant de groupe a **un seul** libellé. Le renommage du groupe UDR est représenté par **deux organes** de même sigle `UDR` : `PO847173` « UDR » (2024-09-12 → 2025-09-04), puis `PO872880` « Union des droites pour la République » (depuis 2025-09-05), même couleur et même numéro de préséance. Aucun champ ne les relie : ils restent deux groupes distincts (décision du 2026-11-14), la table `groupes` (un libellé par identifiant) suffit.
@@ -28,7 +28,7 @@ Source : fichier officiel « Acteurs, mandats et organes, historique » (AMO30),
 
 ## Entrées / Sorties
 - Entrées : archive(s) de référentiel (organes, acteurs), base de travail avec les identifiants `groupes_vus` et `deputes_vus` déjà importés (ALG-07), identifiants référencés lus dans `scrutin_group_votes`, `scrutin_individual_votes`, `scrutin_mises_au_point`.
-- Sorties : mise à jour de `groupes(id, libelle, sigle)` et `deputes(id, nom, prenom)` ; `RapportResolution` : `groupes_references`, `groupes_resolus`, `groupes_non_resolus` (liste), `deputes_references`, `deputes_resolus`, `deputes_non_resolus` (liste), `noms_modifies` (liste `{id, ancien, nouveau}`), `avertissements`.
+- Sorties : mise à jour de `groupes(id, libelle, sigle)` et `deputes(id, nom, prenom, civilite)` ; `RapportResolution` : `groupes_references`, `groupes_resolus`, `groupes_non_resolus` (liste), `deputes_references`, `deputes_resolus`, `deputes_non_resolus` (liste), `noms_modifies` (liste `{id, ancien, nouveau}`), `avertissements`.
 
 ## Définitions
 - **Identifiant référencé** : identifiant effectivement utilisé dans une table de votes ou de mises au point. On ne charge que ceux-là (minimisation : un référentiel contient des personnes et organes qui n'ont aucun rapport avec les scrutins).
@@ -64,7 +64,7 @@ pour chaque id dans refs_g:
 pour chaque id dans refs_d:
     a = acteurs[id]
     si a présent, unique et nom non vide:
-        UPDATE deputes SET nom = texte(a.nom), prenom = texte(a.prenom) WHERE id = ?    [3, 7]
+        UPDATE deputes SET nom = texte(a.nom), prenom = texte(a.prenom), civilite = texte(a.civ) WHERE id = ?    [3, 7]
     sinon: non résolu                                           # nom = NULL
 
 # Règles absolues
@@ -82,7 +82,7 @@ Propriété : un nom n'est écrit que si l'identifiant exact (`PO…` ou `PA…`
 |---|-------|---------------|
 | 1 | Lire les archives de référentiel avec la même lecture sécurisée qu'ALG-01 (liste blanche de noms, limites de taille, UTF-8 strict, JSON sans clé dupliquée) | Un référentiel est une entrée externe comme les scrutins ; les mêmes risques s'appliquent |
 | 2 | Pour chaque organe : valider l'identifiant (`^PO[1-9][0-9]*$`), normaliser le libellé et le sigle (NFC, espaces de début et de fin retirés, chaîne vide → `null`), relever `codeType` (groupe parlementaire si `GP`) ; libellé = `libelle`, sigle = `libelleAbrege` | Mêmes règles de texte que ALG-02 (N5) ; le texte intérieur n'est jamais réécrit |
-| 3 | Pour chaque acteur : valider l'identifiant (`^PA[1-9][0-9]*$`, lu dans `uid.#text`, égal au nom du fichier), normaliser `etatCivil.ident.nom` et `.prenom` comme à l'étape 2 | Idem ; seules ces deux valeurs sont lues |
+| 3 | Pour chaque acteur : valider l'identifiant (`^PA[1-9][0-9]*$`, lu dans `uid.#text`, égal au nom du fichier), normaliser `etatCivil.ident.nom`, `.prenom` et `.civ` (civilité) comme à l'étape 2 | Idem ; seules ces trois valeurs sont lues |
 | 4 | Si un identifiant apparaît plusieurs fois avec des contenus différents : erreur `identifiant_ambigu` pour cet identifiant (non résolu) ; avec un contenu identique : avertissement | Deux contenus pour un identifiant empêchent de choisir sans deviner |
 | 5 | Ne retenir que les identifiants référencés (groupes : valeurs non nulles de `groupe_id` ; députés : `depute_id` des votes et des mises au point) | Minimisation ; borne la taille des données publiées |
 | 6 | Un identifiant référencé comme groupe qui existe dans le référentiel mais n'est **pas** un groupe parlementaire : non résolu, avertissement `organe_pas_un_groupe` | On ne présente jamais comme « groupe » un organe d'un autre type |
@@ -108,7 +108,7 @@ Propriété : un nom n'est écrit que si l'identifiant exact (`PO…` ou `PA…`
 | Référentiel absent ou illisible | l'import des scrutins reste valide, tous les noms restent `NULL` ; `echec` du traitement des noms journalisé | le site reste utilisable avec « libellé non résolu » |
 
 ## Exemples chiffrés (à reproduire en test)
-Sur l'archive de 8 877 scrutins et le référentiel AMO30 du 2026-11-14 : `groupes_references = 13` (hors `PO0`), `groupes_resolus = 13`, `groupes_non_resolus = 0` ; `deputes_references = 652`, `deputes_resolus = 652`, `deputes_non_resolus = 0` ; `PO0` jamais résolu ni inséré. Cas réels : `PO847173` → libellé « UDR », sigle `UDR` ; `PO872880` → « Union des droites pour la République », sigle `UDR` ; deux lignes `groupes` distinctes. Les tests utiliseront des **extraits réels** du référentiel (quelques fichiers `organe` et `acteur`, sans les données personnelles non lues) et des cas construits pour les erreurs (identifiant absent, doublon, organe qui n'est pas un groupe).
+Sur l'archive de 8 877 scrutins et le référentiel AMO30 du 2026-11-14 : `groupes_references = 13` (hors `PO0`), `groupes_resolus = 13`, `groupes_non_resolus = 0` ; `deputes_references = 652`, `deputes_resolus = 652`, `deputes_non_resolus = 0` (civilités : 406 `M.`, 246 `Mme`) ; `PO0` jamais résolu ni inséré. Cas réels : `PO847173` → libellé « UDR », sigle `UDR` ; `PO872880` → « Union des droites pour la République », sigle `UDR` ; deux lignes `groupes` distinctes. Les tests utiliseront des **extraits réels** du référentiel (quelques fichiers `organe` et `acteur`, sans les données personnelles non lues) et des cas construits pour les erreurs (identifiant absent, doublon, organe qui n'est pas un groupe).
 
 ## Invariants vérifiés
 - Aucun nom n'est écrit sans correspondance exacte d'identifiant.
@@ -117,19 +117,17 @@ Sur l'archive de 8 877 scrutins et le référentiel AMO30 du 2026-11-14 : `group
 - `groupes_resolus + groupes_non_resolus = groupes_references` ; idem pour les députés.
 - Deux résolutions des mêmes entrées produisent la même base.
 
-## Décisions du 2026-11-14 et questions restantes
-Tranché :
+## Décisions (2026-11-14 et 2026-11-18) : toutes les questions sont tranchées
 1. Source des référentiels : AMO30 (voir « Constats sur les référentiels »), téléchargé par ALG-13 avec une adresse et des seuils propres.
+2. **Profil de lecture dans ALG-01** : ALG-01 reçoit un paramètre de profil (motif de nom, règle d'identité entre le nom du fichier et le contenu, limites) ; le profil « scrutins » reste la valeur par défaut. Le profil « référentiels » admet `json/organe/PO<n>.json` et `json/acteur/PA<n>.json` (les `json/deport/…` sont ignorés avec compteur) et l'identité se vérifie sur `organe.uid` et `acteur.uid.#text`. Voir ALG-01, « Profils de lecture ».
 3. `PO872880` et `PO847173` : deux groupes distincts, aucun lien affiché ; le référentiel ne les relie pas (même sigle `UDR`, périodes successives).
+4. **Données de député affichées : nom, prénom et civilité** (`etatCivil.ident.civ` : `M.` pour 406 des 652 députés, `Mme` pour 246), sans autre donnée personnelle. La table `deputes` gagne une colonne `civilite` (migration à ajouter avec le code d'ALG-09).
 5. Libellé de groupe daté : sans objet, un seul libellé par identifiant ; la table `groupes` suffit.
-
-Restant ouvert :
-2. **Profil de lecture d'ALG-01** : les entrées du référentiel ont un autre motif de nom (`json/organe/PO<n>.json`, `json/acteur/PA<n>.json`, `json/deport/…`) que les scrutins. Proposition : ajouter à ALG-01 un paramètre de profil (motif de nom, identité contenu/nom, limites), le profil « scrutins » restant la valeur par défaut. D'accord ?
-4. **Noms de députés affichés** : nom et prénom seuls, sans civilité ni autre donnée personnelle du référentiel. D'accord ?
 
 ## Sources et constats
 Cahier technique §2 (référentiels, affiliation du scrutin), §4 (`groupes`, `deputes`) ; `.agents/DECISIONS.md` (2026-10-22 « Priorité à l'ETL, noms résolus dès la phase A » et « Source : open data officiel ») ; `.agents/CONVENTIONS.md` ; `docs/methodology.md` (garantie 1) ; mesures du 2026-11-03.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction, structure et règles seulement ; référentiels à inspecter.
+- v3 (2026-11-18) : questions 2 et 4 tranchées (profil dans ALG-01, civilité ajoutée) ; statut « Validé ».
 - v2 (2026-11-14) : référentiel AMO30 téléchargé et inspecté ; champs, structure, couverture (13/13 groupes, 652/652 députés) et qualité établis ; constats UDR.

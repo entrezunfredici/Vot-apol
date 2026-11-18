@@ -1,5 +1,5 @@
 # ALG-13 — Téléchargement de l'archive (URL, statut HTTP, taille, fraîcheur, comparaison d'empreinte)
-Statut : Brouillon    Version : 2    Date : 2026-11-14
+Statut : Validé    Version : 3    Date : 2026-11-18
 
 ## But
 Récupérer l'archive officielle des scrutins en s'assurant qu'on a bien reçu **une archive complète, depuis la source prévue**, en conserver la provenance, et dire si elle diffère de ce qui est déjà publié, avant de lui appliquer ALG-01. Un téléchargement douteux ne produit aucune archive.
@@ -135,19 +135,17 @@ Les tests utilisent un **serveur HTTP local** de test (aucun accès au réseau p
 - Aucune requête n'est faite hors de `hotes_autorises` ; aucun certificat n'est ignoré ; aucun secret n'est envoyé ni journalisé.
 - La fonction n'est pas appelée en mode hors ligne.
 
-## Décisions du 2026-11-14 et questions restantes
-Tranché :
+## Décisions (2026-11-14 et 2026-11-18) : toutes les questions sont tranchées
 1. Adresse officielle et hôte autorisé : voir « Constats » ; la source publie un horodatage (`Last-Modified`, date de la page) et une empreinte MD5 (page seulement, non utilisée).
-3. Seuils de taille et de fraîcheur : conservés, ils sont cohérents avec l'archive observée (à recaler après quelques téléchargements).
-5. Référentiels de noms : même fonction, profil propre (ci-dessus).
-
-Restant ouvert :
-2. **Comparaison avec la version publiée** : elle suppose que `meta.json` est lisible en ligne ; au premier déploiement, aucune version n'existe (`null`). D'accord ?
-4. **Conservation des archives en CI** : combien de jours (provenance et audit, cahier §5.2 règle 10) ? Proposition : 30 jours pour l'archive des scrutins, 30 pour le référentiel.
+2. Comparaison avec la version publiée par `meta.json` en ligne : un `404` vaut « aucune publication » (`empreinte_publiee = null`, résultat `nouvelle`) ; toute autre erreur est un `echec` (`publie_inconnu`), jamais une première publication. **Retenu.**
+3. Seuils de taille et de fraîcheur : conservés, cohérents avec l'archive observée ; à recaler après quelques téléchargements réels (réglage, non bloquant).
+4. **Conservation des archives en CI : 30 jours** (archive des scrutins et référentiel), comme artefacts d'exécution.
+5. Référentiels de noms : même fonction, profil propre (voir « Profil référentiels de noms »).
 
 ## Sources et constats
 Cahier technique §5.2 (règles 9 et 10), §10 (points 1, 2 et 6) ; `.agents/DECISIONS.md` (2026-10-22 « Source : open data officiel, pas de scraping ») ; `docs/methodology.md` (garantie 4) ; `.agents/CONVENTIONS.md` (bibliothèque standard en priorité) ; fiches ALG-01, 04, 12.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- v3 (2026-11-18) : questions 2 et 4 tranchées (404 = première publication, conservation 30 jours) ; statut « Validé ».
 - v2 (2026-11-14) : adresse officielle vérifiée, archive téléchargée et lue (9 895 scrutins), en-têtes observés, profil des référentiels de noms.

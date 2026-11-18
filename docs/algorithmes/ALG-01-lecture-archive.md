@@ -1,5 +1,5 @@
 # ALG-01 — Lecture sécurisée de l'archive des scrutins
-Statut : Validé    Version : 2    Date : 2026-11-11
+Statut : Validé    Version : 3    Date : 2026-11-18
 
 ## But
 Lire l'archive des scrutins (fichier ZIP ou dossier déjà extrait) en ne laissant passer que des fichiers JSON de scrutin conformes, sans jamais écrire sur le disque, et produire une empreinte de l'archive ainsi qu'un rapport de lecture exact (ce qui a été lu, refusé, ignoré, et pourquoi).
@@ -143,6 +143,20 @@ Relations mathématiques à retenir :
 | 24 | Si des `trous` existent ou si `numero_min` ≠ 1 : ajouter un avertissement (le statut ne change pas) | La numérotation observée est continue ; une rupture est une alerte sans présumer de sa cause |
 | 25 | Retourner le rapport ; il est journalisé en entier, sans tronquer la liste des refus | Traçabilité (garantie 4) et audit |
 
+## Profils de lecture (ajout du 2026-11-18, décision ALG-09 question 2)
+ALG-01 reçoit un paramètre `profil`, le profil `scrutins` étant la **valeur par défaut** (comportement et tests actuels inchangés). Un profil fixe : le motif de nom admis, la règle d'identité entre le nom du fichier et le contenu, le sort des entrées d'un dossier connu mais sans intérêt, les limites. Le profil `referentiels` sert à ALG-09 (archive AMO30) :
+
+| Élément | Profil `scrutins` | Profil `referentiels` |
+|---------|-------------------|------------------------|
+| Motif de nom admis | `json/VTANR5L<L>V<n>.json` | `json/organe/PO<n>.json`, `json/acteur/PA<n>.json` (`n` entier ≥ 1 sans zéro initial, 9 chiffres au plus) |
+| Entrées ignorées avec compteur | entrées de dossier | entrées de dossier et `json/deport/…` |
+| Identité nom ↔ contenu | `scrutin.uid` et `scrutin.legislature` | `organe.uid` ou `acteur.uid.#text` égal au nom du fichier (sans extension) |
+| Racine JSON | exactement `{"scrutin": {…}}` | exactement `{"organe": {…}}` ou `{"acteur": {…}}` selon le dossier |
+| Limites | `MAX_ENTREES` 50 000, `MAX_OCTETS_ENTREE` 5 Mio, `MAX_OCTETS_TOTAL` 1 Gio, `MAX_RATIO` 100 | identiques (mesuré : 14 059 entrées, 364 530 octets au plus, 96 Mo au total, ratio maximal 26,2) |
+| Numéros et trous | calculés | non calculés (`numero_min`, `numero_max`, `trous` vides) |
+
+Le profil est choisi par l'appelant, jamais déduit de l'archive. **Implémentation à faire avec ALG-09.**
+
 ## Cas limites et erreurs
 | Cas | Résultat attendu | Pourquoi |
 |-----|------------------|----------|
@@ -188,5 +202,6 @@ Les questions ouvertes du brouillon sont tranchées selon les recommandations de
 `docs/analyse-donnees-sources.md`, cahier technique §5.2 (règles 1, 2, 8, 10) et §5.3 (fichier corrompu au milieu de l'archive), `docs/methodology.md` (garanties 2 et 4).
 
 ## Historique
+- v3 (2026-11-18) : profils de lecture (`scrutins` par défaut, `referentiels` pour ALG-09).
 - v1 (2026-10-25) : première rédaction.
 - v2 (2026-11-11) : validée. Ajout des champs `motif_echec` et `liens_symboliques_ignores` au rapport ; questions ouvertes tranchées.
