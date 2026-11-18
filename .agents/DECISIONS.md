@@ -115,7 +115,7 @@ Sur plusieurs scrutins : afficher la répartition brute (nombre de scrutins par 
 **Contexte** : Le dépôt devait être ouvert (transparence du traitement des données politiques).
 **Décision** : Le **code** est sous licence MIT (fichier `LICENSE`). Les **données** gardent leur licence d'origine (Assemblée nationale, open data) : attribution et conditions à rappeler dans `docs/methodology.md` et le pied de page du site.
 **Alternative écartée** : Licence copyleft (GPL/AGPL) : contraignante pour des réutilisateurs sans bénéfice pour ce projet.
-**Conséquences** : Licence exacte des données **à vérifier** sur la page source avant publication (supposée Licence Ouverte Etalab 2.0, non confirmée).
+**Conséquences** : Licence vérifiée le 2026-11-14 : « Licence Ouverte / Open Licence » (version non précisée sur la page), mention de la paternité obligatoire ; voir la décision du 2026-11-14 sur les sources.
 
 ---
 
@@ -135,8 +135,56 @@ Sur plusieurs scrutins : afficher la répartition brute (nombre de scrutins par 
 
 ---
 
+### [2026-11-14] Relecture des algorithmes : corrections de spécification
+**Contexte** : Une relecture externe des fiches ALG-01 à ALG-13 a signalé des incohérences et des faiblesses.
+**Décision** : (1) ALG-05 : l'écart du scrutin n° 1 (21 non-votants nominatifs pour 10 au total) apparaît en R07 **et** R08 (deux écarts connus) ; R11 et R12 réservés au niveau lot. (2) ALG-01 : trous de numérotation comptés sans énumération (détail plafonné à 1 000), bornes aussi pour les dossiers, numéros limités à 9 chiffres ; ALG-02 : entiers limités à 18 chiffres. (3) ALG-12 : « rien à faire » repose sur une empreinte d'entrées composite (archive, versions d'algorithmes, référentiels, règles de classification), pas sur l'archive seule. (4) « Présence » renommée « participation au vote enregistrée » (les délégations comptent) ; `change_resultat` renommé `change_position_majoritaire` ; toute position affichée avec son effectif (ALG-03).
+**Alternative écartée** : Garder « présence » (mathématiquement exact mais trompeur politiquement) ; décider « rien à faire » sur l'archive seule.
+**Conséquences** : Fiches ALG-01, 02, 03, 05, 06, 10, 11, 12 modifiées ; la garantie 10 de `docs/methodology.md` reformulée le 2026-11-14 (voir ci-dessous).
+
+---
+
+### [2026-11-14] Classification : vocabulaire étendu et affichage de l'incertitude (ALG-08)
+**Contexte** : 99,7 % des scrutins sont déduits d'un titre ; un badge « à vérifier » presque partout perd son sens.
+**Décision** : Donnée conservée (`a_verifier`, `classification_confidence`) ; affichage par une mention générale sur le filtre, badge réservé aux scrutins indéterminés ou incohérents. Catégories ajoutées : `sous_amendement`, `declaration_gouvernement`, `partie_loi_finances`. Catégorie non stockée, recalculée à l'export. Six corrections de titres validées le 2026-11-18 (`etl/corrections_classification.json`).
+**Alternative écartée** : Badge sur chaque scrutin ; garder les sous-amendements dans `amendement`.
+**Conséquences** : Vocabulaire du cahier §6 étendu ; garantie 10 reformulée ; comptes à remesurer sur l'archive complète (9 895 scrutins).
+
+---
+
+### [2026-11-14] Indicateurs de groupe : tranches réglables sans qualificatif, personnes distinctes (ALG-10)
+**Contexte** : La fiche proposait des tranches à 90 % et 75 % ; le responsable a demandé des tranches réglables (<20, 20-40, 40-60, 60-80, >80, 100 %).
+**Décision** : Tranches réglables par défaut `[20, 40, 60, 80]` + 100 % (unanime), libellées par leurs bornes seules, **sans qualificatif** (« faible », « élevé » refusés : décision de neutralité du 2026-10-22 maintenue) ; bornes = limites inférieures incluses ; nombre de personnes distinctes calculé en plus des membres-scrutins. La tranche « moins de 20 % » est structurellement vide (part minimale 33,4 %).
+**Alternative écartée** : Libellés qualitatifs ; seuils fixes.
+**Conséquences** : Statistiques précalculées par catégorie et par année (ALG-11). `PO847173` et `PO872880` restent deux groupes distincts (même sigle UDR, sans lien dans le référentiel).
+
+---
+
+### [2026-11-14] Sources officielles vérifiées (ALG-09, ALG-13)
+**Contexte** : Les adresses officielles et les référentiels n'étaient pas vérifiés.
+**Décision** : Scrutins : `https://data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip` (30 518 412 octets, 9 895 scrutins au 2026-11-14). Référentiels : fichier AMO30 (`.../17/amo/tous_acteurs_mandats_organes_xi_legislature/AMO30_tous_acteurs_tous_mandats_tous_organes_historique.json.zip`, 13 736 513 octets). Hôte autorisé : `data.assemblee-nationale.fr`. Licence : Licence Ouverte / Open Licence (mention de la paternité obligatoire ; version non précisée sur la page). Un téléchargement a confirmé les empreintes MD5 affichées sur la page source ; elles ne sont pas utilisées (pas de lecture de page web).
+**Alternative écartée** : Lire la page web pour récupérer l'empreinte (contraire à « pas de scraping »).
+**Conséquences** : Mention de la paternité à prévoir sur le site ; les références `PO0` n'existent pas dans le référentiel.
+
+---
+
+### [2026-11-18] Fiches ALG-01 à ALG-13 validées ; ALG-14 créée
+**Contexte** : Les questions ouvertes ont été posées au responsable du projet.
+**Décision** : (1) Base reconstruite à chaque exécution de la CI ; `etl_version` **calculée** (SHA-256 des modules ALG-02, 04, 06) ; aucune suppression de scrutin (pas d'`etl prune`) ; `--dry-run` ajouté. (2) Votes individuels **dans `scrutins/<id>.json`** ; un fichier par scrutin, alerte à 15 000 fichiers ; nouveaux fichiers `deputes.json`, `qualite.json`, `manifeste.json`, `scrutins-index.json` ; lien officiel `https://www.assemblee-nationale.fr/dyn/17/scrutins/<numéro>` ; validateurs de schémas écrits à la main. (3) Mode sûr au départ, validation par un seul relecteur (le responsable) ; seuils de 20 et 500 conservés. (4) Noms des députés : nom, prénom et civilité seulement ; profil de lecture ajouté à ALG-01 pour les référentiels. (5) 404 sur `meta.json` = première publication, autre erreur = échec ; archives et artefacts conservés 30 jours. (6) **ALG-14** (vérification indépendante sur fichiers bruts tirés au hasard) créée, règle bloquante G06 d'ALG-12.
+**Alternative écartée** : `etl_version` manuelle ; fichiers de votes séparés ; ALG-14 repoussée.
+**Conséquences** : Cahier technique passé en 0.2 (2026-11-18). Reste à faire dans le code : profil ALG-01, migration `civilite`, ALG-08 à ALG-14. ALG-14 est encore en « Brouillon ».
+
+---
+
+### [2026-11-18] Modèles de données : paquet `models/` (commun + un fichier par algorithme)
+**Contexte** : `models.py` atteignait 437 lignes et mêlait les modèles de sept algorithmes, tandis que ceux d'ALG-05, 07 et 13 vivaient dans leur module algo : deux conventions à la fois.
+**Décision** : `etl/models/` avec `commun.py` (modèles utilisés par au moins deux algorithmes : sorties d'ALG-01, contrat d'ALG-02, position majoritaire d'ALG-03, lot d'ALG-04), un fichier `algNN.py` par algorithme pour ses modèles propres (types d'entrée, de sortie, de rapport, paramètres, protocoles d'E/S), et un `__init__.py` qui ré-exporte tout. Règle : un modèle passe dans `commun.py` dès qu'un deuxième algorithme l'importe. `commun.py` n'importe rien d'autre du projet ; les fichiers `algNN.py` n'importent que `commun.py` et leurs voisins du paquet. Les exceptions et les constantes de comportement restent dans les modules d'algorithmes.
+**Alternative écartée** : laisser les modèles propres dans le module de leur algorithme (mélange données et fonctions pures) ; garder un seul `models.py`.
+**Conséquences** : `from etl.models import X` fonctionne partout, sans changement des imports existants. `etl_version` (ALG-07) est inchangée : elle ne hache que les modules ALG-02, 04 et 06, qui n'ont pas été modifiés. Les modèles d'ALG-11, 12 et 14 iront dans `models/alg11.py`, `alg12.py`, `alg14.py`.
+
+---
+
 ## Décisions en suspens
 
 | Sujet | Options | Critère de décision |
 |-------|---------|---------------------|
-| Format des votes individuels | Dans `scrutins/<id>.json` / fichier voisin chargé à la demande | Taille moyenne d'un scrutin (environ 577 votants) ; limite de 20 000 fichiers |
+| *(aucune)* | Le format des votes individuels est tranché (dans `scrutins/<id>.json`, voir la décision du 2026-11-18). | |

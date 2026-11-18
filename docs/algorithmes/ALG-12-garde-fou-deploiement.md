@@ -162,6 +162,13 @@ Tests sur des rapports construits (aucune donnée parlementaire n'est produite) 
 - Le déploiement ne publie que l'artefact dont le `rapport_sha256` correspond à la décision.
 - Aucun secret n'apparaît dans les rapports ni dans `decision.json`.
 
+## Précisions à l'implémentation (2026-11-18)
+- **G02** est évaluée de façon plus stricte que la liste de la fiche : tout statut d'import autre que `termine` bloque (donc aussi `simulation`, qui n'écrit rien et ne doit jamais autoriser un déploiement). De même **G03** bloque tout statut de réconciliation autre que `ok`, `ecarts_connus` et `ecarts_informatifs`, et **G04** tout statut d'export autre que `ok` : on ne devine pas un statut inconnu.
+- **Deux appels.** `doit_traiter(entrees_courantes, manifeste_publie, forcer)` répond à l'étape 1 *avant* de télécharger et d'importer (cahier §10) ; `decider(...)` est appelé après l'export et refait le test d'étape 1 sur `manifeste.json`. Les deux utilisent `empreinte_entrees` (ALG-11), qui couvre l'archive, `version_etl`, `versions_algorithmes` (empreinte du code d'ALG-02, 03, 04, 06, 08, 09, 10, 11 et des schémas d'export), la version des règles de classification et, quand ils sont connus, les empreintes des référentiels.
+- `decision.json` contient `decision`, `raisons`, `diff`, `donnees_sha256`, `empreinte_entrees` et `rapport_sha256` (SHA-256 des cinq premiers champs) : c'est l'empreinte qui relie une approbation à un artefact précis.
+- `deploiement_autorise(decision, approuvee, rapport_sha256_artefact)` n'autorise que l'artefact décidé (`publier`, ou `attente_validation` approuvée) ; `bloquer` et `rien_a_faire` n'autorisent jamais. `verifier_deploiement(meta_en_ligne, archive_sha256, nombre_scrutins)` fait l'étape 9.
+- Non couvert ici : le workflow GitHub Actions et la commande qui assemble les rapports (`sync`), qui relèvent de la documentation de déploiement.
+
 ## Décisions (2026-11-14 et 2026-11-18) : toutes les questions sont tranchées
 1. Seuils `SEUIL_MODIFIES = 20` et `SEUIL_NOUVEAUX = 500` conservés au départ, à recaler après quelques semaines de synchronisation.
 2. Manifeste précédent lu dans la version publiée (`/data/v1/manifeste.json`) : `manifeste.json` accepté dans le contrat d'ALG-11.
@@ -176,3 +183,4 @@ Cahier technique §10 et §11 ; `docs/methodology.md` (garanties 2, 4, 5, 6) ; `
 ## Historique
 - v1 (2026-11-03) : première rédaction.
 - v2 (2026-11-18) : questions tranchées ; règle G06 (ALG-14) ajoutée ; statut « Validé ».
+- 2026-11-18 : code et tests écrits ; précisions à l'implémentation (G02 plus stricte, `doit_traiter`, `decision.json`).

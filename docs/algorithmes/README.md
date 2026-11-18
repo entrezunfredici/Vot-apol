@@ -69,4 +69,4 @@ Références aux constats de `docs/analyse-donnees-sources.md`, aux décisions d
 | ALG-11 | Export statique (fichiers JSON, déterminisme, limites Cloudflare) | [Validé](ALG-11-export-statique.md) |
 | ALG-12 | Garde-fou avant déploiement (changement anormal, écarts nouveaux) | [Validé](ALG-12-garde-fou-deploiement.md) |
 | ALG-13 | Téléchargement de l'archive (URL, statut HTTP, taille, fraîcheur, comparaison d'empreinte) | [Validé](ALG-13-telechargement.md) |
-| ALG-14 | Vérification indépendante sur fichiers bruts tirés au hasard (garantie 3) | [Brouillon](ALG-14-verification-independante.md) |
+| ALG-14 | Vérification indépendante sur fichiers bruts tirés au hasard (garantie 3) | [Validé](ALG-14-verification-independante.md) |

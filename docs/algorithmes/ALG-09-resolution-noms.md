@@ -131,3 +131,4 @@ Cahier technique §2 (référentiels, affiliation du scrutin), §4 (`groupes`, `
 - v1 (2026-11-03) : première rédaction, structure et règles seulement ; référentiels à inspecter.
 - v3 (2026-11-18) : questions 2 et 4 tranchées (profil dans ALG-01, civilité ajoutée) ; statut « Validé ».
 - v2 (2026-11-14) : référentiel AMO30 téléchargé et inspecté ; champs, structure, couverture (13/13 groupes, 652/652 députés) et qualité établis ; constats UDR.
+- 2026-11-18 : code et tests écrits sans écart avec la fiche (profil ALG-01, migration `002_deputes_civilite.sql`, `alg09_resolution_noms.py`) ; le référentiel réel donne 13 groupes sur 13 et 652 députés sur 652 résolus.

@@ -178,6 +178,7 @@ voteapol/
   etl/
     pyproject.toml
     src/etl/algos/   # un module alg01_… à alg13_… par fiche, fonctions pures
+    src/etl/models/  # commun.py (modèles partagés) + un fichier algNN.py par algorithme ; __init__ ré-exporte tout
     src/etl/io/      # réseau, ZIP, SQLite, fichiers (aucune logique métier)
     tests/
   web/
@@ -238,4 +239,5 @@ Ne pas versionner l'archive ZIP, les bases volumineuses, les clés API ni les do
 
 ## Historique des modifications
 - **0.2 (2026-11-18)** — Mise à jour après la validation des fiches `docs/algorithmes/ALG-01` à `ALG-13` et la création d'ALG-14 : source officielle et 9 895 scrutins (§1, §2) ; référentiels AMO30 (§2) ; schéma (§4 : clé par rang, `groupe_rang`, `cause`, `origine`, `etl_version`, `civilite`) ; commande `--dry-run` et `validate` (§5.1) ; base reconstruite à chaque exécution (§5.2) ; catégories étendues (§6) ; « participation au vote enregistrée », tranches réglables et personnes distinctes (§7) ; fichiers `deputes.json`, `qualite.json`, `manifeste.json`, votes individuels dans `scrutins/<id>.json`, alerte à 15 000 fichiers (§8) ; empreinte d'entrées composite, ALG-14, mode sûr (§10).
+- 0.2.1 (2026-11-18) — §12 : `src/etl/models/` remplace `models.py` (modèles partagés dans `commun.py`, un fichier par algorithme).
 - 0.1 (2026-10-19) — Version initiale.

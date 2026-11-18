@@ -1,5 +1,5 @@
 # ALG-14 — Vérification indépendante sur fichiers bruts tirés au hasard
-Statut : Brouillon    Version : 1    Date : 2026-11-18
+Statut : Validé    Version : 2    Date : 2026-11-18
 
 ## But
 Contrôler, sur un échantillon de scrutins tiré de façon reproductible, que chaque chiffre du fichier publié `scrutins/<id>.json` est identique à celui du fichier source officiel, **sans réutiliser le code du pipeline** (garantie 3). Un défaut commun à ALG-02, 04 ou 11 qui passerait les contrôles de cohérence interne d'ALG-05 doit être détecté ici.
@@ -75,12 +75,16 @@ Sur les six fixtures réelles et leur export : `nb_verifies = 6`, `ecarts = []`.
 - Aucun écart n'est corrigé, masqué ni toléré.
 - `nb_verifies` = nombre de scrutins de l'échantillon réellement comparés.
 
-## Questions à trancher avant de coder
-1. **Taille de l'échantillon** (200) et nombre de scrutins récents (20) : propositions à recaler selon la durée mesurée en CI.
-2. **Liste exacte des champs comparés** (étape 5) : dépend du contrat d'export d'ALG-11 ; à figer quand le schéma d'export sera écrit.
+## Décisions (2026-11-18) : questions tranchées par le responsable du projet
+1. **Échantillon** : 200 scrutins, dont les 4 obligatoires (n° 1, 489, 1017, 1302), les 20 plus récents et un tirage reproductible du reste (graine = SHA-256 de l'archive) ; à recaler selon la durée mesurée en CI. Si la taille demandée dépasse le nombre de scrutins, tous sont vérifiés.
+2. **Champs comparés** (étape 5, fixés avec le schéma d'export d'ALG-11) : `id`, `numero`, `date`, `titre`, `type_vote` (code et libellé), `resultat` (`adopté` → `adopte`, `rejeté` → `rejete`), `source.sha256` (SHA-256 des octets du fichier brut), `source.archive_sha256` (SHA-256 du ZIP, quand l'archive est un fichier), `source.lien_officiel`, les six totaux, pour chaque groupe **par rang** (jamais par identifiant) `groupe_id` (`PO0` → `null`), `ventilation_disponible`, `membres`, `pour`, `contre`, `abstentions`, `non_votants`, le **nombre de votants par position**, et chaque vote `(député, rang du groupe, position, délégation, cause)`.
+3. **Contrôle global** en plus de l'échantillon : mêmes identifiants de scrutin dans l'archive et dans l'export (fichier absent ou en trop) et `meta.nombre_scrutins` égal au nombre de scrutins de l'archive.
+4. **Non couvert** : les mises au point et les dysfonctionnements, la catégorie, la position majoritaire et les corrections (valeurs dérivées par ALG-03, 06 et 08, qui ne sont pas des chiffres de la source), `groupes/`, `deputes.json`, `stats.json` (contrôlés par ALG-05, ALG-10 et les tests).
+5. **Dossier extrait** accepté comme archive (usage local et tests) ; la graine est alors dérivée des identifiants.
 
 ## Sources et constats
 `docs/methodology.md` (garantie 3), `docs/algorithmes/ALG-05-reconciliation.md` (question 4), `docs/algorithmes/ALG-11-export-statique.md` et `ALG-12-garde-fou-deploiement.md` (règle G06), `.agents/CONVENTIONS.md` (bibliothèque standard en priorité).
 
 ## Historique
 - v1 (2026-11-18) : première rédaction, créée sur décision du responsable du projet.
+- v2 (2026-11-18) : questions tranchées, champs comparés figés, contrôle global ajouté ; statut « Validé » ; script `scripts/verifier_echantillon.py` et tests écrits le même jour.

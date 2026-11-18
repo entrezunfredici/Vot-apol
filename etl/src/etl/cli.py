@@ -20,6 +20,7 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("export")
     s.add_argument("--db", required=True)
     s.add_argument("--out", required=True)
+    s.add_argument("--manifeste-precedent", default=None, help="manifeste.json de la version publiée")
     a = p.parse_args(argv)
     if a.cmd == "inspect":
         return pipeline.run_inspect(a.zip)
@@ -27,4 +28,4 @@ def main(argv: list[str] | None = None) -> int:
         return pipeline.run_import(a.zip, a.db, a.dry_run, a.journal_dir)
     if a.cmd == "validate":
         return pipeline.run_validate(a.db)
-    return pipeline.run_export(a.db, a.out)
+    return pipeline.run_export(a.db, a.out, manifeste_precedent=a.manifeste_precedent)

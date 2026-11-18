@@ -149,3 +149,4 @@ Cahier technique §5.2 (règles 9 et 10), §10 (points 1, 2 et 6) ; `.agents/DEC
 - v1 (2026-11-03) : première rédaction.
 - v3 (2026-11-18) : questions 2 et 4 tranchées (404 = première publication, conservation 30 jours) ; statut « Validé ».
 - v2 (2026-11-14) : adresse officielle vérifiée, archive téléchargée et lue (9 895 scrutins), en-têtes observés, profil des référentiels de noms.
+- 2026-11-18 : code et tests écrits sans écart avec la fiche. Téléchargement réel vérifié (archive des scrutins 30 755 838 octets, 9 969 scrutins ; référentiel 13 738 715 octets) ; le code utilise `meta.json` avec la clé `archive_sha256`.

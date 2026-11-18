@@ -1,4 +1,5 @@
-"""Dataclasses partagées (Scrutin, VoteGroupe, MiseAuPoint…), à définir avec les fiches validées."""
+"""Modèles partagés par plusieurs algorithmes : sorties d'ALG-01 (lecture), contrat d'ALG-02
+(scrutin normalisé), ALG-03 (position majoritaire) et ALG-04 (lot de lignes)."""
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -43,15 +44,6 @@ class RapportLecture:
     statut: str = "echec"  # "complet" | "partiel" | "echec"
     motif_echec: str | None = None
     liens_symboliques_ignores: int = 0
-
-
-@dataclass(frozen=True)
-class Anomalie:
-    """Erreur ou avertissement de normalisation (ALG-02), avec le chemin du champ concerné."""
-
-    chemin: str
-    code: str
-    detail: str = ""
 
 
 @dataclass(frozen=True)
@@ -130,15 +122,6 @@ class ScrutinNormalise:
 
 
 @dataclass(frozen=True)
-class ResultatNormalisation:
-    """Sortie d'ALG-02 : un scrutin OU des erreurs (jamais les deux), plus les avertissements."""
-
-    scrutin: ScrutinNormalise | None
-    erreurs: list[Anomalie]
-    avertissements: list[Anomalie]
-
-
-@dataclass(frozen=True)
 class PositionMajoritaire:
     """Position majoritaire calculée d'un groupe sur un scrutin (sortie d'ALG-03)."""
 
@@ -150,9 +133,6 @@ class PositionMajoritaire:
     participation_num: int  # E
     participation_den: int  # effectif du groupe (nombreMembresGroupe)
     position_source: str | None = None  # positionMajoritaire de la source, pour audit seulement
-
-
-# --- ALG-04 : lignes prêtes pour SQLite ----------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -245,27 +225,3 @@ class LotScrutin:
     groupes_vus: list[str]
     deputes_vus: list[str]
     comptages: Comptages
-
-
-@dataclass(frozen=True)
-class CorrectionGroupe:
-    """Effectifs corrigés d'un groupe par les mises au point (ALG-06, partie B), pour l'affichage."""
-
-    rang: int
-    groupe_id: str
-    pour_corrige: int
-    contre_corrige: int
-    abstentions_corrigees: int
-    position_officielle: str
-    position_corrigee: str
-    raison_absence_corrigee: str | None
-    change_position_majoritaire: bool
-    nb_mises_au_point: int
-
-
-@dataclass(frozen=True)
-class ScrutinRefuse:
-    """Scrutin écarté avant l'import (erreur ALG-02, 04 ou 06) : rien n'est écrit (ALG-07.4)."""
-
-    id: str
-    cause: str

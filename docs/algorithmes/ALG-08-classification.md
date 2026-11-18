@@ -175,5 +175,5 @@ Cahier technique §6, `docs/methodology.md` (garantie 10), `.agents/CONVENTIONS.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction, règles établies à partir des 8 877 titres réels.
-- v3 (2026-11-18) : six corrections validées et inscrites ; statut « Validé ».
+- v3 (2026-11-18) : six corrections validées et inscrites ; statut « Validé ». Code et tests écrits le même jour, sans écart avec la fiche.
 - v2 (2026-11-14) : réécriture après les décisions du responsable : vocabulaire étendu (`sous_amendement`, `declaration_gouvernement`, `partie_loi_finances`), règles renumérotées R1 à R8, comptes recalculés sur les 8 877 titres (0 conflit), règle d'affichage de l'incertitude.

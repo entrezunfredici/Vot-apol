@@ -15,6 +15,10 @@ Exclus : calcul de la position majoritaire (ALG-03), des mises au point corrigé
 - Rythme : 8 877 scrutins pour 25 mois (octobre 2024 à octobre 2026), soit environ 360 scrutins par mois.
 - **Limite de 20 000 fichiers (Cloudflare, gratuit) : le nombre de fichiers est la contrainte, pas la taille.** À ce rythme et avec un fichier par scrutin, la limite serait atteinte au printemps 2029 (fin normale de la législature : l'extrapolation est approximative, le rythme dépend du calendrier parlementaire). Avec en plus un fichier de votes par scrutin, elle serait atteinte dans environ 3 mois.
 
+## Écart mesuré à l'implémentation (2026-11-18) et décision
+Export réel de l'archive de 8 877 scrutins : **8 919 fichiers** (au plus 8 922 attendus), 22 fragments d'index, 13 groupes, 652 députés, 1 323 978 votes, 118 Mo au total. Écart avec les constats ci-dessus : les fichiers `groupes/<id>.json` (une ligne d'environ 300 octets par scrutin du groupe, 8 800 lignes) faisaient **environ 2,6 Mio chacun**, et non quelques centaines de Ko ; `manifeste.json` (une empreinte par scrutin) fait environ 1,7 Mio.
+**Décision du responsable (2026-11-18) : compacter les lignes de groupe.** `groupes/<id>.json` porte désormais `colonnes` (nommées une fois) et des lignes en tableaux ; aucune donnée n'est perdue (même contenu, position majoritaire mise à plat). Les fichiers passent sous 1 Mio. L'avertissement `fichier_volumineux` ne vise plus que les fichiers chargés par le navigateur : `manifeste.json`, lu seulement par le garde-fou de déploiement, en est exclu (la limite d'échec de 20 Mio s'applique toujours).
+
 ## Fichiers produits
 Sous `/data/v1/` (le contrat du cahier §8, complété).
 
@@ -25,7 +29,7 @@ Sous `/data/v1/` (le contrat du cahier §8, complété).
 | `scrutins-index/AAAA-MM.json` | une ligne compacte par scrutin du mois : id, numéro, date, titre, catégorie (valeur, méthode, `a_verifier`), résultat, totaux | au plus 25 |
 | `scrutins/<id>.json` | détail complet d'un scrutin (voir ci-dessous), **votes individuels inclus** | 8 877 |
 | `groupes.json` | groupes (identifiant, libellé, sigle, ou « libellé non résolu »), nombre de scrutins où chacun apparaît | 1 |
-| `groupes/<id>.json` | une ligne par scrutin du groupe : effectifs, position majoritaire (ALG-03), catégorie, date | 13 |
+| `groupes/<id>.json` | une ligne par scrutin du groupe, **en tableau** (colonnes nommées une fois) : effectifs, position majoritaire (ALG-03), catégorie, date | 13 |
 | `deputes.json` | identifiant, nom, prénom des députés présents dans les votes | 1 |
 | `stats.json` | indicateurs d'ALG-10 pour les sélections précalculées | 1 |
 | `qualite.json` | page « Qualité des données » : version, date, empreinte, écarts connus (ALG-05), scrutins modifiés depuis la publication précédente (ALG-12) | 1 |
@@ -156,3 +160,4 @@ Cahier technique §3, §8, §10 ; `.agents/CONVENTIONS.md` (« Règles spécifiq
 ## Historique
 - v1 (2026-11-03) : première rédaction.
 - v2 (2026-11-18) : questions tranchées par le responsable du projet ; statut « Validé ».
+- 2026-11-18 : code et tests écrits ; écart de taille des fichiers `groupes/<id>.json` mesuré et résolu par le compactage des lignes (voir « Écart mesuré et décision »).

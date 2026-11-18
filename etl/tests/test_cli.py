@@ -10,9 +10,8 @@ def test_cli_requires_command():
         main([])
 
 
-def test_cli_export_pas_encore_implemente():
-    with pytest.raises(NotImplementedError):
-        main(["export", "--db", "x.sqlite", "--out", "o"])
+def test_cli_export_base_introuvable(tmp_path):
+    assert main(["export", "--db", str(tmp_path / "absente.db"), "--out", str(tmp_path / "o")]) == 2
 
 
 def test_cli_validate_base_introuvable(tmp_path):

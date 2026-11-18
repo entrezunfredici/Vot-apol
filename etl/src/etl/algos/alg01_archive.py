@@ -1,6 +1,7 @@
 """ALG-01 : Lecture sécurisée de l'archive (ZIP/dossier, taille, chemins, empreinte).
 
-Spécification : docs/algorithmes/ALG-01-lecture-archive.md (statut « Validé », version 2).
+Spécification : docs/algorithmes/ALG-01-lecture-archive.md (statut « Validé », version 3 :
+profils de lecture « scrutins » et « référentiels »).
 Aucun accès disque ni réseau ici : l'ouverture et la lecture des octets sont déléguées à une
 source (`SourceArchive`, implémentée dans etl/io/zipfile.py et etl/io/dossier.py).
 Chaque bloc de code est précédé de « # ALG-01.k : <résumé> ».
@@ -72,6 +73,50 @@ class SourceArchive(Protocol):
 
 _NOM_SCRUTIN = re.compile(r"json/VTANR5L(?P<leg>[1-9][0-9]*)V(?P<num>[1-9][0-9]{0,8})\.json")
 _FORME_SCRUTIN = re.compile(r"VTANR5L[0-9]+V[0-9]+\.json")
+_NOM_REFERENTIEL = re.compile(
+    r"json/(?:organe/PO|acteur/PA)(?P<num>[1-9][0-9]{0,8})\.json"
+)
+_FORME_REFERENTIEL = re.compile(r"P[OA][0-9]+\.json")
+_REFERENTIEL_IGNORE = re.compile(r"json/deport/.*")
+
+
+@dataclass(frozen=True)
+class ProfilLecture:
+    """Ce qui distingue deux types d'archive (ALG-01, « Profils de lecture »).
+
+    Le profil est choisi par l'appelant, jamais déduit de l'archive. Le profil `scrutins` est la
+    valeur par défaut : son comportement est celui de la version 2 de la fiche.
+    """
+
+    nom: str
+    motif_nom: re.Pattern[str]  # entrées admises (comparaison exacte)
+    forme_nom: re.Pattern[str]  # « a la forme d'un fichier de ce type » (refus bloquant)
+    ignorees: re.Pattern[str] | None  # entrées connues sans intérêt : ignorées avec compteur
+    racines: tuple[str, ...]  # racines JSON admises ; la racine est exactement {racine: {...}}
+    avec_legislature: bool  # le nom et le contenu portent la législature
+    avec_numerotation: bool  # numéros min/max et trous calculés
+
+
+PROFIL_SCRUTINS = ProfilLecture(
+    nom="scrutins",
+    motif_nom=_NOM_SCRUTIN,
+    forme_nom=_FORME_SCRUTIN,
+    ignorees=None,
+    racines=("scrutin",),
+    avec_legislature=True,
+    avec_numerotation=True,
+)
+
+PROFIL_REFERENTIELS = ProfilLecture(
+    nom="referentiels",
+    motif_nom=_NOM_REFERENTIEL,
+    forme_nom=_FORME_REFERENTIEL,
+    ignorees=_REFERENTIEL_IGNORE,
+    racines=("organe", "acteur"),
+    avec_legislature=False,
+    avec_numerotation=False,
+)
+
 _LECTEUR = re.compile(r"[A-Za-z]:")
 
 
@@ -100,7 +145,9 @@ def _refuser_constante(valeur: str) -> Any:
     raise ValueError(f"constante non JSON : {valeur}")
 
 
-def _verifier_et_parser(octets: bytes, nom: str, legislature: int) -> tuple[Any, str | None]:
+def _verifier_et_parser(
+    octets: bytes, nom: str, legislature: int, profil: ProfilLecture = PROFIL_SCRUTINS
+) -> tuple[Any, str | None]:
     """Étapes 16 à 19 : renvoie (document, None) ou (None, motif de refus)."""
     # ALG-01.16 : UTF-8 strict, BOM refusé
     if octets.startswith(b"\xef\xbb\xbf"):
@@ -118,14 +165,28 @@ def _verifier_et_parser(octets: bytes, nom: str, legislature: int) -> tuple[Any,
         )
     except (ValueError, RecursionError):
         return None, "json_invalide"
-    # ALG-01.18 : racine exactement {"scrutin": {...}}
-    if not (isinstance(doc, dict) and set(doc) == {"scrutin"} and isinstance(doc["scrutin"], dict)):
+    # ALG-01.18 : racine exactement {racine: {...}}
+    if not (
+        isinstance(doc, dict)
+        and len(doc) == 1
+        and next(iter(doc)) in profil.racines
+        and isinstance(next(iter(doc.values())), dict)
+    ):
         return None, "structure"
-    # ALG-01.19 : identité nom de fichier / contenu
-    scrutin = doc["scrutin"]
+    racine = next(iter(doc))
+    contenu = doc[racine]
     sans_extension = nom.rsplit("/", 1)[-1].removesuffix(".json")
-    if scrutin.get("uid") != sans_extension or scrutin.get("legislature") != str(legislature):
-        return None, "identite"
+    # ALG-01.19 : identité nom de fichier / contenu (et législature pour les scrutins)
+    if profil.nom == "scrutins":
+        if contenu.get("uid") != sans_extension or contenu.get("legislature") != str(legislature):
+            return None, "identite"
+    else:
+        uid = contenu.get("uid")
+        if isinstance(uid, dict):  # un acteur porte son identifiant dans uid.#text
+            uid = uid.get("#text")
+        dossier = nom.split("/")[1] if nom.count("/") >= 2 else ""
+        if uid != sans_extension or racine != dossier:
+            return None, "identite"
     return doc, None
 
 
@@ -133,6 +194,7 @@ def lire_archive(
     source: SourceArchive,
     legislature: int = 17,
     limites: LimitesLecture = LIMITES_PAR_DEFAUT,
+    profil: ProfilLecture = PROFIL_SCRUTINS,
 ) -> tuple[list[EntreeAcceptee], RapportLecture]:
     """Lit une archive de scrutins et renvoie (entrées acceptées triées, rapport).
 
@@ -173,7 +235,7 @@ def lire_archive(
     # ALG-01.9 : examen dans l'ordre alphabétique des noms
     for entree in sorted(entrees, key=lambda e: e.nom):
         nom = entree.nom
-        motif_nom = _NOM_SCRUTIN.fullmatch(nom)
+        motif_nom = profil.motif_nom.fullmatch(nom)
 
         # ALG-01.8 : lien symbolique d'un dossier : refusé s'il a la forme d'un scrutin,
         # sinon ignoré avec compteur (hors entrees_vues)
@@ -196,10 +258,15 @@ def lire_archive(
         # ALG-01.10 : nom dangereux, vérifié avant le motif
         if _nom_dangereux(nom):
             rapport.refusees.append(EntreeRefusee(nom, "nom_dangereux"))
-            if _FORME_SCRUTIN.fullmatch(nom.replace("\\", "/").rsplit("/", 1)[-1]):
+            if profil.forme_nom.fullmatch(nom.replace("\\", "/").rsplit("/", 1)[-1]):
                 refus_bloquants += 1  # CHOIX: « ressemble à un scrutin » = nom de fichier VTANR5L…
             else:
                 rapport.avertissements.append(f"entrée refusée (nom dangereux) : {nom!r}")
+            continue
+
+        # ALG-01.11 : entrée connue sans intérêt pour ce profil (ex. json/deport/…) : ignorée
+        if profil.ignorees is not None and profil.ignorees.fullmatch(nom):
+            rapport.ignorees += 1
             continue
 
         # ALG-01.11 : liste blanche du motif de nom, puis législature attendue
@@ -207,7 +274,7 @@ def lire_archive(
             rapport.refusees.append(EntreeRefusee(nom, "hors_motif"))
             rapport.avertissements.append(f"entrée hors motif : {nom}")
             continue
-        if motif_nom.group("leg") != str(legislature):
+        if profil.avec_legislature and motif_nom.group("leg") != str(legislature):
             rapport.refusees.append(EntreeRefusee(nom, "legislature_inattendue"))
             rapport.avertissements.append(f"législature inattendue : {nom}")
             continue
@@ -251,7 +318,7 @@ def lire_archive(
             return [], rapport
 
         # ALG-01.16 à 19 : décodage, JSON, structure, identité
-        document, motif_refus = _verifier_et_parser(octets, nom, legislature)
+        document, motif_refus = _verifier_et_parser(octets, nom, legislature, profil)
         if motif_refus is not None:
             rapport.refusees.append(EntreeRefusee(nom, motif_refus))
             refus_bloquants += 1
@@ -264,7 +331,7 @@ def lire_archive(
     # détail plafonné)
     acceptees.sort(key=lambda a: a.numero)
     rapport.acceptees = len(acceptees)
-    if acceptees:
+    if acceptees and profil.avec_numerotation:
         rapport.numero_min = acceptees[0].numero
         rapport.numero_max = acceptees[-1].numero
         presents = {a.numero for a in acceptees}
@@ -296,7 +363,9 @@ def lire_archive(
         rapport.statut = "complet"
 
     # ALG-01.24 : numérotation discontinue = avertissement, sans changer le statut
-    if rapport.nb_trous or (rapport.numero_min is not None and rapport.numero_min != 1):
+    if profil.avec_numerotation and (
+        rapport.nb_trous or (rapport.numero_min is not None and rapport.numero_min != 1)
+    ):
         rapport.avertissements.append("numérotation discontinue")
 
     # ALG-01.25 : retour du flux trié et du rapport (journalisé en entier par l'appelant)

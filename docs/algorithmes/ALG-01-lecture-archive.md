@@ -155,7 +155,7 @@ ALG-01 reçoit un paramètre `profil`, le profil `scrutins` étant la **valeur p
 | Limites | `MAX_ENTREES` 50 000, `MAX_OCTETS_ENTREE` 5 Mio, `MAX_OCTETS_TOTAL` 1 Gio, `MAX_RATIO` 100 | identiques (mesuré : 14 059 entrées, 364 530 octets au plus, 96 Mo au total, ratio maximal 26,2) |
 | Numéros et trous | calculés | non calculés (`numero_min`, `numero_max`, `trous` vides) |
 
-Le profil est choisi par l'appelant, jamais déduit de l'archive. **Implémentation à faire avec ALG-09.**
+Le profil est choisi par l'appelant, jamais déduit de l'archive. **Implémenté le 2026-11-18** (`ProfilLecture`, `PROFIL_SCRUTINS` par défaut, `PROFIL_REFERENTIELS`) ; sur le référentiel réel AMO30 : `complet`, 14 059 entrées vues, 14 000 acceptées (10 824 organes, 3 176 acteurs), 59 ignorées (`json/deport/`), 0 refusée.
 
 ## Cas limites et erreurs
 | Cas | Résultat attendu | Pourquoi |

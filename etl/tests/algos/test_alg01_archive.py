@@ -359,3 +359,94 @@ def test_ALG_01_dossier_octets_declares_excessifs(tmp_path):
     d = _dossier(tmp_path / "d", [1, 2])
     _, r = lire_source(str(d), limites=LimitesLecture(max_octets_total=10))
     assert r.statut == "echec" and r.motif_echec == "taille_declaree_excessive"
+
+
+# --- profil « référentiels » (ALG-09) ---------------------------------------------------------
+
+
+def _organe(n: int, **sur) -> bytes:
+    organe = {"uid": f"PO{n}", "codeType": "GP", "libelle": "Groupe", "libelleAbrege": "G"} | sur
+    return json.dumps({"organe": organe}).encode()
+
+
+def _acteur(n: int, uid=None) -> bytes:
+    uid = {"#text": f"PA{n}"} if uid is None else uid
+    return json.dumps(
+        {"acteur": {"uid": uid, "etatCivil": {"ident": {"civ": "M.", "prenom": "A", "nom": "B"}}}}
+    ).encode()
+
+
+def _lire_ref(tmp_path, entrees):
+    from etl.algos.alg01_archive import PROFIL_REFERENTIELS
+
+    return lire_source(_zip(tmp_path / "r.zip", entrees), profil=PROFIL_REFERENTIELS)
+
+
+def test_ALG_01_profil_referentiels_organes_acteurs_et_deports_ignores(tmp_path):
+    acceptees, r = _lire_ref(
+        tmp_path,
+        [
+            ("json/organe/PO10.json", _organe(10)),
+            ("json/acteur/PA7.json", _acteur(7)),
+            ("json/deport/DE1.json", b"{}"),
+        ],
+    )
+    assert r.statut == "complet" and r.acceptees == 2 and r.ignorees == 1
+    assert [a.nom for a in acceptees] == ["json/acteur/PA7.json", "json/organe/PO10.json"]
+    # pas de numérotation pour ce profil
+    assert (r.numero_min, r.numero_max, r.trous, r.nb_trous) == (None, None, [], 0)
+    assert "numérotation discontinue" not in r.avertissements
+
+
+def test_ALG_01_profil_referentiels_identite_nom_contenu(tmp_path):
+    _, r = _lire_ref(tmp_path, [("json/organe/PO10.json", _organe(10, uid="PO11"))])
+    assert [(e.nom, e.motif) for e in r.refusees] == [("json/organe/PO10.json", "identite")]
+
+
+def test_ALG_01_profil_referentiels_identite_acteur_uid_objet(tmp_path):
+    _, r = _lire_ref(tmp_path, [("json/acteur/PA7.json", _acteur(7, uid={"#text": "PA8"}))])
+    assert [e.motif for e in r.refusees] == ["identite"]
+
+
+def test_ALG_01_profil_referentiels_racine_ne_correspond_pas_au_dossier(tmp_path):
+    # un fichier « acteur » rangé dans le dossier organe : refusé
+    _, r = _lire_ref(tmp_path, [("json/organe/PO7.json", _acteur(7))])
+    assert [e.motif for e in r.refusees] == ["identite"]
+    # même identifiant, mais la racine JSON n'est pas {organe|acteur: {...}}
+    _, r = _lire_ref(tmp_path, [("json/organe/PO7.json", b'{"autre": {"uid": "PO7"}}')])
+    assert [e.motif for e in r.refusees] == ["structure"]
+
+
+def test_ALG_01_profil_referentiels_nom_hors_motif_et_nom_de_scrutin(tmp_path):
+    _, r = _lire_ref(
+        tmp_path,
+        [("json/organe/PO10.json", _organe(10)), ("json/VTANR5L17V1.json", _faux(1))],
+    )
+    assert [(e.nom, e.motif) for e in r.refusees] == [("json/VTANR5L17V1.json", "hors_motif")]
+    assert r.statut == "complet"  # un nom hors motif est un avertissement, pas un blocage
+
+
+def test_ALG_01_profil_referentiels_numero_trop_long_hors_motif(tmp_path):
+    nom = "json/organe/PO" + "1" * 5000 + ".json"
+    _, r = _lire_ref(tmp_path, [(nom, b"{}")])
+    assert [e.motif for e in r.refusees] == ["hors_motif"]
+
+
+def test_ALG_01_profil_par_defaut_reste_scrutins(tmp_path):
+    # un nom de référentiel avec le profil par défaut est refusé, comme avant
+    _, r = lire_source(_zip(tmp_path / "s.zip", [("json/organe/PO10.json", _organe(10))]))
+    assert [e.motif for e in r.refusees] == ["hors_motif"]
+
+
+AMO_REEL = Path(__file__).parents[3] / "data" / "referentiels_dl_amo30" / "amo30.zip"
+
+
+@pytest.mark.skipif(not AMO_REEL.exists(), reason="référentiel réel absent (data/ ignoré par Git)")
+def test_ALG_01_profil_referentiels_archive_reelle_amo30():
+    from etl.algos.alg01_archive import PROFIL_REFERENTIELS
+
+    acceptees, r = lire_source(str(AMO_REEL), profil=PROFIL_REFERENTIELS)
+    assert (r.statut, r.entrees_vues, r.acceptees, r.ignorees, r.refusees) == (
+        "complet", 14_059, 14_000, 59, [])
+    assert sum(a.nom.startswith("json/organe/") for a in acceptees) == 10_824
+    assert sum(a.nom.startswith("json/acteur/") for a in acceptees) == 3_176

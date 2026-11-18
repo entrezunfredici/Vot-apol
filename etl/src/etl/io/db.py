@@ -8,14 +8,23 @@ from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
-from ..algos.alg05_reconciliation import GroupeAControler, ScrutinAControler
-from ..algos.alg07_import_idempotent import (
-    MAX_CAUSES_RESUME,
+from ..algos.alg07_import_idempotent import MAX_CAUSES_RESUME, ErreurBase
+from ..models import (
+    POSITIONS_VOTE,
     AncienScrutin,
-    ErreurBase,
+    Comptages,
+    GroupeAControler,
+    LigneGroupe,
+    LigneMiseAuPoint,
+    LigneScrutin,
+    LigneTotaux,
+    LigneVote,
+    LotScrutin,
     RapportImport,
+    ReferentielsExport,
+    ResolutionNoms,
+    ScrutinAControler,
 )
-from ..models import POSITIONS_VOTE, LotScrutin
 
 MIGRATIONS = Path(__file__).parents[4] / "db" / "migrations"
 
@@ -39,8 +48,12 @@ def version_schema_attendue(dossier: Path = MIGRATIONS) -> int:
 
 
 def appliquer_migrations(conn: sqlite3.Connection, dossier: Path = MIGRATIONS) -> None:
-    for fichier in sorted(dossier.glob("*.sql")):
-        conn.executescript(fichier.read_text(encoding="utf-8"))
+    # une migration n'est appliquée qu'une fois : `user_version` porte la dernière appliquée
+    # (une base à jour ne rejoue rien ; 002 « ALTER TABLE » n'est pas rejouable)
+    deja = int(conn.execute("PRAGMA user_version").fetchone()[0])
+    for fichier in sorted(dossier.glob("*.sql"), key=_numero_migration):
+        if _numero_migration(fichier) > deja:
+            conn.executescript(fichier.read_text(encoding="utf-8"))
     # `user_version` porte le numéro de la dernière migration : ALG-07.1 le compare au code
     conn.execute(f"PRAGMA user_version = {version_schema_attendue(dossier)}")
 
@@ -276,4 +289,143 @@ class DepotSqlite:
                 "\n".join(causes[:MAX_CAUSES_RESUME]) or None,
                 import_id,
             ),
+        )
+
+
+# --- ALG-09 : lecture des identifiants référencés et écriture des noms ---------------------------
+
+
+def lire_references_noms(
+    conn: sqlite3.Connection,
+) -> tuple[dict[str, int], dict[str, int]]:
+    """Identifiants référencés (ALG-09.5) avec leur nombre d'occurrences.
+
+    Groupes : nombre de scrutins où le groupe figure (`groupe_id` non nul). Députés : nombre de
+    lignes dans les votes et les mises au point.
+    """
+    groupes = {
+        gid: n
+        for gid, n in conn.execute(
+            "SELECT groupe_id, COUNT(*) FROM scrutin_group_votes "
+            "WHERE groupe_id IS NOT NULL GROUP BY groupe_id"
+        )
+    }
+    deputes: dict[str, int] = {}
+    for table in ("scrutin_individual_votes", "scrutin_mises_au_point"):
+        # noms de tables : constantes du code, jamais des données
+        for did, n in conn.execute(f"SELECT depute_id, COUNT(*) FROM {table} GROUP BY depute_id"):
+            deputes[did] = deputes.get(did, 0) + n
+    return groupes, deputes
+
+
+def lire_anciens_noms(
+    conn: sqlite3.Connection,
+) -> tuple[dict[str, tuple[str | None, str | None]], dict[str, tuple[str | None, str | None, str | None]]]:
+    """Noms déjà en base (ALG-09.8) : groupes (libellé, sigle), députés (nom, prénom, civilité)."""
+    groupes = {g: (lib, sig) for g, lib, sig in conn.execute("SELECT id, libelle, sigle FROM groupes")}
+    deputes = {
+        d: (nom, prenom, civ)
+        for d, nom, prenom, civ in conn.execute("SELECT id, nom, prenom, civilite FROM deputes")
+    }
+    return groupes, deputes
+
+
+def ecrire_noms(conn: sqlite3.Connection, resolution: ResolutionNoms) -> None:
+    """ALG-09.7 : UPDATE paramétré des seuls identifiants résolus ; jamais de création de ligne."""
+    conn.executemany(
+        "UPDATE groupes SET libelle = ?, sigle = ? WHERE id = ?",
+        [(g.libelle, g.sigle, g.id) for g in resolution.groupes],
+    )
+    conn.executemany(
+        "UPDATE deputes SET nom = ?, prenom = ?, civilite = ? WHERE id = ?",
+        [(d.nom, d.prenom, d.civilite, d.id) for d in resolution.deputes],
+    )
+
+
+# --- ALG-11 : lecture de la base pour l'export ----------------------------------------------------
+
+
+def lire_referentiels_export(conn: sqlite3.Connection) -> ReferentielsExport:
+    """Noms résolus par ALG-09 (None tant qu'un identifiant n'est pas résolu)."""
+    groupes = {g: (lib, sig) for g, lib, sig in conn.execute("SELECT id, libelle, sigle FROM groupes")}
+    deputes = {
+        d: (nom, prenom, civ)
+        for d, nom, prenom, civ in conn.execute("SELECT id, nom, prenom, civilite FROM deputes")
+    }
+    return ReferentielsExport(groupes, deputes)
+
+
+def lire_contexte_base(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Provenance lue dans la base (aucune horloge) : dernier import terminé, nombre de scrutins."""
+    ligne = conn.execute(
+        "SELECT archive_sha256, finished_at FROM imports "
+        "WHERE status LIKE 'termine%' AND finished_at IS NOT NULL ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    nombre = conn.execute("SELECT COUNT(*) FROM scrutins").fetchone()[0]
+    return {
+        "archive_sha256": ligne[0] if ligne else "",
+        "donnees_du": ligne[1] if ligne else "",
+        "nombre_scrutins": nombre,
+    }
+
+
+def _noms_classe(classe: type) -> tuple[str, ...]:
+    return tuple(f.name for f in dataclasses.fields(classe))
+
+
+def _construire(classe: type, ligne: tuple | None, colonnes: tuple[str, ...]) -> Any:
+    if ligne is None:
+        raise ErreurBase("donnees_incompletes", f"ligne absente pour {classe.__name__}")
+    return classe(**dict(zip(colonnes, ligne, strict=True)))
+
+
+def lire_scrutins_export(conn: sqlite3.Connection) -> Iterator[LotScrutin]:
+    """Un `LotScrutin` par scrutin, par numéro croissant, relu dans la base (ALG-11.3).
+
+    Le rattachement des mises au point (ALG-06 A) est déjà stocké ; le statut (`rattachee` ou
+    `introuvable`) et l'effet (`sans_effet` ou `modifie_position`) en sont déduits comme à l'import.
+    Les lots sont produits un à un : la mémoire ne grossit pas avec le nombre de scrutins.
+    """
+    cols_s, cols_t = _noms_classe(LigneScrutin), _noms_classe(LigneTotaux)
+    cols_g, cols_v = _noms_classe(LigneGroupe), _noms_classe(LigneVote)
+    # noms de colonnes : constantes du code (champs de dataclasses), jamais des données
+    req_s = f"SELECT {', '.join(cols_s)} FROM scrutins WHERE id = ?"
+    req_t = f"SELECT {', '.join(cols_t)} FROM scrutin_totals WHERE scrutin_id = ?"
+    req_g = f"SELECT {', '.join(cols_g)} FROM scrutin_group_votes WHERE scrutin_id = ? ORDER BY rang"
+    req_v = f"SELECT {', '.join(cols_v)} FROM scrutin_individual_votes WHERE scrutin_id = ?"
+    req_m = (
+        "SELECT depute_id, origine, position_declaree, par_delegation, groupe_rang, groupe_id, "
+        "position_initiale FROM scrutin_mises_au_point WHERE scrutin_id = ? ORDER BY depute_id"
+    )
+    ids = [r[0] for r in conn.execute("SELECT id FROM scrutins ORDER BY numero")]
+    for sid in ids:
+        p = (sid,)
+        scrutin = _construire(LigneScrutin, conn.execute(req_s, p).fetchone(), cols_s)
+        totaux = _construire(LigneTotaux, conn.execute(req_t, p).fetchone(), cols_t)
+        groupes = [_construire(LigneGroupe, r, cols_g) for r in conn.execute(req_g, p)]
+        votes = [_construire(LigneVote, r, cols_v) for r in conn.execute(req_v, p)]
+        mises = []
+        for r in conn.execute(req_m, p):
+            rattachee = r[4] is not None
+            effet = None if not rattachee else ("sans_effet" if r[2] == r[6] else "modifie_position")
+            mises.append(
+                LigneMiseAuPoint(
+                    sid, r[0], r[1], r[2], r[3], r[4], r[5], r[6],
+                    "rattachee" if rattachee else "introuvable", effet,
+                )  # fmt: skip
+            )
+        par_scrutin = dict.fromkeys(POSITIONS_VOTE, 0)
+        par_groupe: dict[int, dict[str, int]] = {g.rang: dict.fromkeys(POSITIONS_VOTE, 0) for g in groupes}
+        for v in votes:
+            par_scrutin[v.position] += 1
+            par_groupe.setdefault(v.groupe_rang, dict.fromkeys(POSITIONS_VOTE, 0))[v.position] += 1
+        yield LotScrutin(
+            scrutin=scrutin,
+            totaux=totaux,
+            groupes=groupes,
+            votes=votes,
+            mises_au_point=mises,
+            groupes_vus=sorted({g.groupe_id for g in groupes if g.groupe_id}),
+            deputes_vus=sorted({v.depute_id for v in votes} | {m.depute_id for m in mises}),
+            comptages=Comptages(par_groupe=par_groupe, scrutin=par_scrutin),
         )

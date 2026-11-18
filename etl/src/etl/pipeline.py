@@ -11,11 +11,23 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .algos import alg02_normalisation, alg04_extraction_scrutin, alg06_mises_au_point
+from .algos import (
+    alg02_normalisation,
+    alg03_position_majoritaire,
+    alg04_extraction_scrutin,
+    alg06_mises_au_point,
+    alg08_classification,
+    alg09_resolution_noms,
+    alg10_indicateurs_groupe,
+    alg11_export_statique,
+    alg11_schemas,
+)
 from .algos.alg01_archive import (
     LIMITES_PAR_DEFAUT,
+    PROFIL_SCRUTINS,
     ErreurSource,
     LimitesLecture,
+    ProfilLecture,
     SourceArchive,
     lire_archive,
 )
@@ -23,32 +35,53 @@ from .algos.alg02_normalisation import normaliser_scrutin
 from .algos.alg04_extraction_scrutin import ErreurExtraction, extraire_scrutin
 from .algos.alg05_reconciliation import (
     ErreurEcartsConnus,
-    RapportReconciliation,
-    ScrutinAControler,
     charger_ecarts_connus,
     controler,
     depuis_lot,
 )
 from .algos.alg06_mises_au_point import rattacher
-from .algos.alg07_import_idempotent import (
-    ErreurBase,
-    RapportImport,
-    calculer_version_etl,
-    importer,
-)
+from .algos.alg07_import_idempotent import ErreurBase, calculer_version_etl, importer
+from .algos.alg08_classification import VERSION_REGLES, ErreurCorrections, charger_corrections
+from .algos.alg11_export_statique import exporter
 from .config import DATA_DIR, SOURCE_URL
-from .io.db import DepotSqlite, lire_pour_controle, version_schema_attendue
+from .io.db import (
+    DepotSqlite,
+    lire_contexte_base,
+    lire_pour_controle,
+    lire_referentiels_export,
+    lire_scrutins_export,
+    version_schema_attendue,
+)
 from .io.dossier import SourceDossier
-from .io.fs import ecrire_journal_import
+from .io.fs import (
+    ErreurPublication,
+    ecrire_journal_import,
+    publier_fichiers,
+    recuperer_publication_interrompue,
+    retirer_temporaire,
+)
 from .io.zipfile import SourceZip
-from .models import EntreeAcceptee, LotScrutin, RapportLecture, ScrutinRefuse
+from .models import (
+    ContexteExport,
+    EntreeAcceptee,
+    LotScrutin,
+    RapportImport,
+    RapportLecture,
+    RapportReconciliation,
+    ScrutinAControler,
+    ScrutinRefuse,
+)
 
 ECARTS_CONNUS = Path(__file__).parents[2] / "ecarts_connus.json"
+CORRECTIONS_CLASSIFICATION = Path(__file__).parents[2] / "corrections_classification.json"
 JOURNAUX = DATA_DIR / "journaux"
 
 
 def lire_source(
-    chemin: str, legislature: int = 17, limites: LimitesLecture = LIMITES_PAR_DEFAUT
+    chemin: str,
+    legislature: int = 17,
+    limites: LimitesLecture = LIMITES_PAR_DEFAUT,
+    profil: ProfilLecture = PROFIL_SCRUTINS,
 ) -> tuple[list[EntreeAcceptee], RapportLecture]:
     """Ouvre un ZIP ou un dossier et applique ALG-01 (étape ALG-01.1 : choix de la source)."""
     # ALG-01.1 : source absente ou ni fichier ni dossier -> échec explicite
@@ -63,7 +96,7 @@ def lire_source(
     except ErreurSource as exc:
         return [], RapportLecture(motif_echec=exc.motif)
     try:
-        return lire_archive(source, legislature, limites)
+        return lire_archive(source, legislature, limites, profil)
     finally:
         source.fermer()
 
@@ -71,6 +104,20 @@ def lire_source(
 def version_etl() -> str:
     """ALG-07, décision 2 : empreinte du contenu des modules ALG-02, ALG-04 et ALG-06."""
     modules = (alg02_normalisation, alg04_extraction_scrutin, alg06_mises_au_point)
+    return calculer_version_etl(Path(m.__file__).read_text(encoding="utf-8") for m in modules)
+
+
+def version_algorithmes() -> str:
+    """ALG-12.1 : empreinte du code des algorithmes qui produisent les données publiées.
+
+    Couvre ALG-02, 03, 04, 06, 08, 09, 10 et 11 (et les schémas d'export) : une correction d'un de
+    ces algorithmes doit faire traiter à nouveau une archive pourtant inchangée.
+    """
+    modules = (
+        alg02_normalisation, alg03_position_majoritaire, alg04_extraction_scrutin,
+        alg06_mises_au_point, alg08_classification, alg09_resolution_noms,
+        alg10_indicateurs_groupe, alg11_export_statique, alg11_schemas,
+    )  # fmt: skip
     return calculer_version_etl(Path(m.__file__).read_text(encoding="utf-8") for m in modules)
 
 
@@ -239,5 +286,87 @@ def run_validate(db_path: str, ecarts_connus: str | Path = ECARTS_CONNUS) -> int
     return _valider_base(db_path, connus, None)
 
 
-def run_export(db_path: str, out_dir: str) -> int:
-    raise NotImplementedError("en attente de ALG-11 validé")
+def _ecarts_publies(reconciliation, connus) -> list[dict]:
+    """Écarts connus (déjà validés) publiés dans qualite.json, avec leur motif."""
+    par_cle = {k.cle(): k for k in connus}
+    publies = []
+    for e in reconciliation.ecarts:
+        if not e.connu:
+            continue
+        k = par_cle[(e.controle, e.scrutin_id, e.groupe_rang, e.detail, e.attendu, e.obtenu)]
+        publies.append(
+            {
+                "controle": e.controle,
+                "scrutin_id": e.scrutin_id,
+                "detail": e.detail,
+                "attendu": e.attendu,
+                "obtenu": e.obtenu,
+                "motif": k.motif,
+                "valide_le": k.valide_le,
+            }
+        )
+    return publies
+
+
+def run_export(
+    db_path: str,
+    out_dir: str,
+    ecarts_connus: str | Path = ECARTS_CONNUS,
+    corrections: str | Path = CORRECTIONS_CLASSIFICATION,
+    manifeste_precedent: str | Path | None = None,
+) -> int:
+    """ALG-05 (base) -> ALG-11 : exporte les fichiers publics vers `out_dir`, ou ne change rien.
+
+    Code de sortie : 0 export publié ; 1 export refusé (la version précédente reste intacte) ;
+    2 entrée illisible (base, écarts connus, corrections, manifeste).
+    """
+    if not Path(db_path).is_file():
+        print(f"base introuvable : {db_path}")
+        return 2
+    try:
+        connus = charger_ecarts_connus(ecarts_connus)
+        liste_corrections = charger_corrections(corrections)
+        precedent = (
+            json.loads(Path(manifeste_precedent).read_text(encoding="utf-8"))
+            if manifeste_precedent
+            else None
+        )
+    except (ErreurEcartsConnus, ErreurCorrections, OSError, ValueError) as exc:
+        print(f"entrée illisible : {exc}")
+        return 2
+
+    # ALG-11.1 : état de la réconciliation sur cette base, relue par requêtes
+    conn = sqlite3.connect(f"{Path(db_path).resolve().as_uri()}?mode=ro", uri=True)
+    try:
+        reconciliation = controler(lire_pour_controle(conn), connus, "base", None)
+        base = lire_contexte_base(conn)
+        referentiels = lire_referentiels_export(conn)
+        contexte = ContexteExport(
+            archive_sha256=base["archive_sha256"],
+            type_empreinte="non_renseigne",  # n'est pas stocké en base (journal d'import)
+            donnees_du=base["donnees_du"],
+            version_etl=version_etl(),
+            version_regles_classification=VERSION_REGLES,
+            statut_reconciliation=reconciliation.statut,
+            nombre_scrutins_base=base["nombre_scrutins"],
+            ecarts_connus=_ecarts_publies(reconciliation, connus),
+            corrections=tuple(liste_corrections),
+            entrees={"versions_algorithmes": version_algorithmes()},
+            manifeste_precedent=precedent,
+        )
+        sortie = Path(out_dir)
+        recuperer_publication_interrompue(sortie)
+        fichiers, rapport = exporter(lire_scrutins_export(conn), referentiels, contexte)
+    finally:
+        conn.close()
+
+    if rapport.statut == "ok":
+        try:
+            publier_fichiers(fichiers, sortie)
+        except ErreurPublication as exc:
+            print(f"publication impossible : {exc}")
+            return 1
+    else:
+        retirer_temporaire(sortie)  # l'ancien répertoire reste intact
+    print(json.dumps(rapport.__dict__, indent=2, ensure_ascii=False, default=list))
+    return 0 if rapport.statut == "ok" else 1

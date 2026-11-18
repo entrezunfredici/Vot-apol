@@ -179,3 +179,4 @@ Sur l'archive réelle : valeurs à établir par le test d'intégration, par exem
 - v3 (2026-11-18) : sélections précalculées (toutes, par catégorie, par année) et bornes confirmées ; statut « Validé ».
 - v2 (2026-11-14) : réécriture après les décisions du responsable : tranches réglables P1 à P`k+2` (remplacent B1 à B5), personnes distinctes, rappel de la part minimale 33,4 %, exemples recalculés, constat sur le renommage `UDR`.
 - 2026-11-14 : décisions du responsable (voir « Décisions ») ; corps de la fiche à mettre à jour, statut inchangé.
+- 2026-11-18 : code et tests écrits sans écart avec la fiche ; les constats de la fiche (9 547 groupes-scrutins sans vote exprimé, 2 035 égalités) sont reproduits exactement sur l'archive de 8 877 scrutins.
