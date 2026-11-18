@@ -1,5 +1,5 @@
 # ALG-10 — Indicateurs de groupe (participation au vote enregistrée, part de la position majoritaire) et comparaison de deux groupes
-Statut : Brouillon    Version : 2    Date : 2026-11-14
+Statut : Validé    Version : 3    Date : 2026-11-18
 
 ## But
 Calculer, pour un groupe et une sélection de scrutins, les seuls indicateurs autorisés par la décision du 2026-10-22 : la participation au vote enregistrée (`E` sur effectif) et la part de la position majoritaire (`m` sur `E`), toujours sous forme d'effectifs avec leur dénominateur ; et décrire, pour deux groupes, sur quels scrutins ils ont la même position majoritaire. Aucun score, aucun classement, aucune moyenne présentée comme une note.
@@ -165,18 +165,17 @@ Sur l'archive réelle : valeurs à établir par le test d'intégration, par exem
 - Aucun indicateur ne dépend de l'ordre d'entrée des lignes.
 - **Conformité inter-langages** : la comparaison de groupes est recalculée dans le navigateur (cahier §8). Un jeu de vecteurs de test (entrées et sorties, dont les exemples ci-dessus) est généré par l'ETL et rejoué par les tests du front (Vitest) pour garantir que les deux implémentations donnent les mêmes valeurs.
 
-## Décisions du 2026-11-14 et question restante
-Tranché :
-1. Tranches de la part majoritaire : réglables, par défaut `[20, 40, 60, 80]` + 100 % (unanime), libellés en bornes numériques seules ; seuils 90 et 75 abandonnés.
-2. Unité « membres-scrutins » **complétée** par le nombre de personnes distinctes (`personnes_exprimees`, `personnes_avec_vote`).
+## Décisions (2026-11-14 et 2026-11-18) : toutes les questions sont tranchées
+1. Tranches de la part majoritaire : réglables, par défaut `[20, 40, 60, 80]` + 100 % (unanime), libellés en bornes numériques seules ; **bornes = limites inférieures incluses** (confirmé). La tranche « moins de 20 % » est toujours vide (part minimale 33,4 %) : confirmé, elle est masquée à l'affichage quand elle est structurellement vide.
+2. Unité « membres-scrutins » complétée par le nombre de personnes distinctes (`personnes_exprimees`, `personnes_avec_vote`).
+3. **Sélections précalculées de `stats.json`** : toutes les sélections, **et par catégorie et par année** (voir ALG-11).
 4. `PO872880` et `PO847173` : deux groupes distincts (le référentiel les montre de même sigle `UDR`, sans lien explicite).
-
-Restant ouvert : 3. Sélections précalculées pour `stats.json` (toutes, ou aussi par catégorie et par année ; voir ALG-11). Deux points à confirmer : la tranche « moins de 20 % » est toujours vide (part minimale 33,4 %) ; les bornes sont des limites inférieures incluses.
 
 ## Sources et constats
 `.agents/DECISIONS.md` (2026-10-22 « Indicateurs sur les groupes »), `docs/methodology.md` (indicateurs, présence, sans vote enregistré), cahier technique §7 et §8, `docs/revue-maquette.md` (écarts n° 1 et 4), fiches ALG-02, 03, 05, mesures du 2026-11-03.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
+- v3 (2026-11-18) : sélections précalculées (toutes, par catégorie, par année) et bornes confirmées ; statut « Validé ».
 - v2 (2026-11-14) : réécriture après les décisions du responsable : tranches réglables P1 à P`k+2` (remplacent B1 à B5), personnes distinctes, rappel de la part minimale 33,4 %, exemples recalculés, constat sur le renommage `UDR`.
 - 2026-11-14 : décisions du responsable (voir « Décisions ») ; corps de la fiche à mettre à jour, statut inchangé.

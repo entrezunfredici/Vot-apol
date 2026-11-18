@@ -1,5 +1,5 @@
 # ALG-08 — Classification des scrutins (catégorie, confiance, « à vérifier »)
-Statut : Brouillon    Version : 2    Date : 2026-11-14
+Statut : Validé    Version : 3    Date : 2026-11-18
 
 ## But
 Attribuer à chaque scrutin une catégorie parmi un vocabulaire fermé, en s'appuyant d'abord sur les métadonnées officielles, puis sur des règles explicites appliquées au titre, en indiquant toujours comment la catégorie a été obtenue et sans jamais présenter une déduction comme une certitude. Cette catégorie sert uniquement de filtre.
@@ -163,18 +163,17 @@ Aucun conflit entre règles (0 titre correspondant à deux catégories). Avec le
 - Côté affichage : **une mention générale** sur le filtre (« Catégories déduites des titres officiels ») plutôt qu'un badge par scrutin ; le badge « à vérifier » n'est affiché que pour les scrutins `indetermine` ou présentant une incohérence (`incoherence_metadonnee`, `regles_en_conflit`).
 - **Garantie 10 à reformuler** dans `docs/methodology.md` (proposition) : « Catégories déduites signalées. Le filtre indique que les catégories sont déduites des titres officiels ; un scrutin dont la catégorie est indéterminée ou incohérente est signalé individuellement ; aucune catégorie déduite n'est présentée comme une certitude officielle. »
 
-## Décisions du 2026-11-14 et question restante
-Tranché :
-1. Garantie 10 : donnée conservée, affichage par mention générale (ci-dessus).
+## Décisions (2026-11-14 et 2026-11-18) : toutes les questions sont tranchées
+1. Garantie 10 : donnée conservée, affichage par mention générale (ci-dessus) ; garantie reformulée dans `docs/methodology.md`.
 2. Sous-amendements : catégorie `sous_amendement` (654 scrutins).
 3. Stockage : catégorie non stockée, recalculée à l'export.
+4. **Les six corrections de titres sont validées** par le responsable du projet le 2026-11-18 : 1633 et 6214 → `sous_amendement` ; 4988 → `amendement` ; 7432 → `motion_rejet` ; 7950 → `article` ; 918 → `texte_ensemble`. Elles sont inscrites dans `etl/corrections_classification.json` (titre exact, motif, date et validateur) ; `indetermine` tombe à 0 sur l'archive de 8 877 scrutins.
 5. `autre` séparée : `declaration_gouvernement` (4 scrutins) et `partie_loi_finances` (7 scrutins) ; `autre` reste dans le vocabulaire, sans règle.
-
-Restant ouvert : 4. **Les six corrections** de titres (fautes de frappe évidentes, scrutins 1633, 4988, 6214, 7432, 7950, 918) doivent être validées par une personne ; la table de corrections est vide tant qu'elles ne le sont pas. La fiche ne peut passer en « Validé » qu'après cette validation et la reformulation de la garantie 10 dans `docs/methodology.md`.
 
 ## Sources et constats
 Cahier technique §6, `docs/methodology.md` (garantie 10), `.agents/CONVENTIONS.md` (« Règles de neutralité », dernier point), `.agents/DECISIONS.md` (2026-10-22 « Sujets et résumés ... »), `docs/analyse-donnees-sources.md` (point 6), mesures du 2026-11-03.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction, règles établies à partir des 8 877 titres réels.
+- v3 (2026-11-18) : six corrections validées et inscrites ; statut « Validé ».
 - v2 (2026-11-14) : réécriture après les décisions du responsable : vocabulaire étendu (`sous_amendement`, `declaration_gouvernement`, `partie_loi_finances`), règles renumérotées R1 à R8, comptes recalculés sur les 8 877 titres (0 conflit), règle d'affichage de l'incertitude.

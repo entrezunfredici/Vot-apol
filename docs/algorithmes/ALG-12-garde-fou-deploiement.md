@@ -1,5 +1,5 @@
 # ALG-12 — Garde-fou avant déploiement (changement anormal, écarts nouveaux)
-Statut : Brouillon    Version : 1    Date : 2026-11-03
+Statut : Validé    Version : 2    Date : 2026-11-18
 
 ## But
 Décider, à partir des rapports des étapes précédentes et d'une comparaison avec la version **publiée**, si les données peuvent être déployées automatiquement, doivent attendre une validation humaine, ou doivent être bloquées ; la décision est toujours accompagnée de ses raisons, et rien n'est jamais déployé sans que cette décision l'autorise.
@@ -47,6 +47,7 @@ Sévérité : **B** → `bloquer` ; **V** → `attente_validation` ; **A** → a
 | G03 | La réconciliation (ALG-05) est `ecarts_nouveaux` | B |
 | G04 | L'export (ALG-11) est en `echec` | B |
 | G05 | `tests_ok` est faux (tests, lexique contrôlé, couleurs) | B |
+| G06 | La vérification indépendante (ALG-14) est en `echec` ou n'a pas été exécutée | B |
 | V00 | `mode_sur` est actif | V |
 | V01 | Il n'y a pas de manifeste précédent (première publication) | V |
 | V02 | `supprimes` n'est pas vide ou ALG-07 a signalé des scrutins `absents_de_l_archive` | V |
@@ -76,12 +77,13 @@ si empreinte_entrees = celle du manifeste publié et non forcer:
     decision = "rien_a_faire" ; arrêt                                              [1]
 
 # Règles bloquantes (B)
-pour chaque règle G01 … G05:                                                       [2]
+pour chaque règle G01 … G06:                                                       [2]
     G01 : téléchargement échoué, ou lecture "echec" / "partiel"
     G02 : import "echoue", "interrompu" ou "termine_avec_erreurs"
     G03 : réconciliation "ecarts_nouveaux"
     G04 : export "echec"
     G05 : tests_ok = faux
+    G06 : vérification indépendante (ALG-14) en échec ou absente
     si vraie: raisons.ajouter(règle)
 si raisons non vide:  decision = "bloquer" ; arrêt   # toutes les raisons sont données
 
@@ -160,18 +162,17 @@ Tests sur des rapports construits (aucune donnée parlementaire n'est produite) 
 - Le déploiement ne publie que l'artefact dont le `rapport_sha256` correspond à la décision.
 - Aucun secret n'apparaît dans les rapports ni dans `decision.json`.
 
-## Décisions du 2026-11-14 et questions restantes
-Tranché :
+## Décisions (2026-11-14 et 2026-11-18) : toutes les questions sont tranchées
 1. Seuils `SEUIL_MODIFIES = 20` et `SEUIL_NOUVEAUX = 500` conservés au départ, à recaler après quelques semaines de synchronisation.
-2. Manifeste précédent lu dans la version publiée (`/data/v1/manifeste.json`) : `manifeste.json` est accepté dans le contrat d'ALG-11.
-3. Mode sûr actif au départ ; `publier` automatique **seulement sur instruction explicite** du responsable du projet.
+2. Manifeste précédent lu dans la version publiée (`/data/v1/manifeste.json`) : `manifeste.json` accepté dans le contrat d'ALG-11.
+3. Mode sûr actif au départ ; `publier` automatique seulement sur instruction explicite du responsable du projet.
 4. Validation : un seul relecteur (le responsable du projet), par l'approbation d'un environnement GitHub.
-
-Restant ouvert : 5. ALG-14 (si créée, règle B supplémentaire G06) ; 6. durée de conservation des artefacts pour la restauration (limites de GitHub Actions).
+5. **ALG-14 créée** : elle devient la règle bloquante G06 (ci-dessus) ; l'entrée de la fonction inclut son rapport.
+6. **Conservation des artefacts de déploiement : 30 jours** (alignée sur ALG-13).
 
 ## Sources et constats
 Cahier technique §10 et §11 ; `docs/methodology.md` (garanties 2, 4, 5, 6) ; `.agents/AGENT.md` (« Ce que l'agent NE doit PAS faire », déploiement) ; `.agents/CONVENTIONS.md` (« Règles spécifiques export statique et déploiement ») ; fiches ALG-01, 05, 07, 09, 11, 13.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
-- 2026-11-14 : décisions du responsable (voir « Décisions ») ; statut inchangé.
+- v2 (2026-11-18) : questions tranchées ; règle G06 (ALG-14) ajoutée ; statut « Validé ».

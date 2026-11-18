@@ -135,7 +135,7 @@ Relations contrôlées (tout en entiers) : `P + C = X` ; `P + C + A = V` ; `Σ p
 1. **Écart du scrutin n° 1** (21 non-votants dans les groupes et dans les lignes nominatives pour 10 au total) : on inscrit **deux** entrées (R07 et R08) dans les écarts connus après examen du fichier. Je propose d'ouvrir le fichier avec toi avant de le valider ; je n'ai pas cherché d'explication.
 2. **R12 informatif ou bloquant ?** Je le propose informatif (règle de droit, hors périmètre du projet).
 3. **R14 bloquant ?** Le doublon `nonVotantsVolontaires` = `abstentions` est sans écart sur 106 524 groupes. Un changement de la source modifierait le sens d'un champ lu ; je le propose bloquant.
-4. **Vérification indépendante** (garantie 3) : elle n'a pas de fiche. Je propose de créer **ALG-14** (script distinct relisant des fichiers bruts tirés au hasard et comparant chaque chiffre de `scrutins/<id>.json`). Veux-tu que je la rédige ?
+4. **Vérification indépendante** (garantie 3) : **ALG-14 créée** le 2026-11-18 (voir la fiche).
 5. **Plafond de 1 000 écarts détaillés** par contrôle : valeur arbitraire, à ajuster.
 
 ## Sources et constats

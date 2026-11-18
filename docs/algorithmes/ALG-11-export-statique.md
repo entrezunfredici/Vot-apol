@@ -1,5 +1,5 @@
 # ALG-11 — Export statique (fichiers JSON, déterminisme, limites Cloudflare)
-Statut : Brouillon    Version : 1    Date : 2026-11-03
+Statut : Validé    Version : 2    Date : 2026-11-18
 
 ## But
 Produire, à partir de la base de travail, l'ensemble des fichiers JSON publics (`/data/v1/…`) : contenu exact et vérifiable, octets identiques à entrée identique, limites de l'hébergement respectées, aucune écriture partielle. Ces fichiers sont l'unique interface entre l'ETL et le site.
@@ -141,17 +141,18 @@ Propriétés : mêmes entrées → mêmes octets ; un échec laisse la version p
 - Aucun fichier ne contient d'heure issue de l'horloge d'exécution ni de secret.
 - Aucun champ n'indique une couleur, un rang de groupe ou un score.
 
-## Décisions du 2026-11-14 et questions restantes
-Tranché :
+## Décisions (2026-11-14 et 2026-11-18) : toutes les questions sont tranchées
 1. Votes individuels **dans `scrutins/<id>.json`**.
-4. Nouveaux fichiers **acceptés** : `deputes.json`, `qualite.json`, `manifeste.json`, `scrutins-index.json` (contrat du cahier §8 modifié, à reporter dans le cahier).
-5. Validation des schémas par **validateurs écrits à la main** dans les tests (pas de dépendance `jsonschema`).
-
-Restant ouvert : 2. passage à l'échelle (un fichier par scrutin, alerte à 15 000 fichiers) ; 3. sélections précalculées de `stats.json` ; 6. modèle d'URL officielle d'un scrutin ; 7. ALG-14 (voir ALG-05, question 4).
+2. **Un fichier par scrutin**, alerte à 15 000 fichiers, échec à 19 000 (limite Cloudflare) ; si nécessaire, passage à `/data/v2/` avec un regroupement par centaine de numéros. Mesure du 2026-11-18 : l'archive officielle compte 9 895 scrutins (le rythme observé reste d'environ 360 par mois) : l'alerte sera atteinte vers fin 2027.
+3. **Sélections précalculées de `stats.json`** : toutes les sélections, **par catégorie et par année** (13 groupes seulement : fichier modeste).
+4. Nouveaux fichiers acceptés : `deputes.json`, `qualite.json`, `manifeste.json`, `scrutins-index.json` (contrat du cahier §8 modifié, à reporter dans le cahier).
+5. Validation des schémas par validateurs écrits à la main (pas de dépendance `jsonschema`).
+6. **Lien officiel d'un scrutin** : `https://www.assemblee-nationale.fr/dyn/17/scrutins/<numéro>` (vérifié le 2026-11-18 : la page du scrutin n° 1 s'ouvre et correspond à la fixture, 8 octobre 2024, motion de censure, 197 pour). `<numéro>` est le numéro du scrutin et `17` la législature ; `source.lien_officiel` est construit par la fiche, jamais lu dans les données.
+7. **ALG-14 créée** (vérification indépendante sur fichiers bruts tirés au hasard) : voir ALG-14.
 
 ## Sources et constats
 Cahier technique §3, §8, §10 ; `.agents/CONVENTIONS.md` (« Règles spécifiques export statique et déploiement ») ; `.agents/DECISIONS.md` (2026-10-22 « Site statique », décisions en suspens) ; `docs/methodology.md` (garanties 4 et 6, couleurs, ordre) ; fiches ALG-03, 05, 06, 08, 09, 10 ; mesures du 2026-11-03.
 
 ## Historique
 - v1 (2026-11-03) : première rédaction.
-- 2026-11-14 : décisions du responsable (voir « Décisions ») ; statut inchangé.
+- v2 (2026-11-18) : questions tranchées par le responsable du projet ; statut « Validé ».
