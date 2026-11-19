@@ -2,7 +2,7 @@
 
 Explorateur public des scrutins de l'Assemblée nationale (XVIIe législature) : retrouver un vote, voir comment chaque groupe politique a voté, et remonter à la source officielle.
 
-> **Statut : conception, implémentation commencée.** ALG-01 (lecture de l'archive) et ALG-02 (normalisation) sont codés et testés (`etl/`) ; les autres algorithmes (ALG-03 à ALG-13) n'ont qu'une spécification (`docs/algorithmes/`). Ce dépôt contient aussi le cahier technique et la maquette ; le reste de ce qui est décrit ci-dessous est l'objectif, pas l'existant.
+> **Statut : ETL complet, front à écrire.** Les 14 algorithmes (`docs/algorithmes/`) sont codés et testés (`etl/`, `scripts/verifier_echantillon.py`) et la commande `etl sync` les enchaîne jusqu'à la décision de publication (`.github/workflows/sync.yml`, `docs/deployment.md`). Le premier déploiement réel n'a pas été exécuté ; le front (`web/`) n'est encore qu'un squelette. Ce dépôt contient aussi le cahier technique et la maquette ; ce qui est décrit plus bas est parfois l'objectif plutôt que l'existant.
 
 ## Principes
 

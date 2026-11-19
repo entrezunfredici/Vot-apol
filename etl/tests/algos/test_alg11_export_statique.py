@@ -55,11 +55,11 @@ def _lots(numeros=(1, 2, 3, 489, 1017, 1302)):
 
 
 def _contexte(**sur) -> ContexteExport:
-    base = dict(
-        archive_sha256=ARCHIVE, type_empreinte="fichier", donnees_du="2026-11-18T00:00:00+00:00",
-        version_etl="etl-test", version_regles_classification=VERSION_REGLES,
-        statut_reconciliation="ecarts_connus", nombre_scrutins_base=6,
-    )  # fmt: skip
+    base = {
+        "archive_sha256": ARCHIVE, "type_empreinte": "fichier", "donnees_du": "2026-11-18T00:00:00+00:00",
+        "version_etl": "etl-test", "version_regles_classification": VERSION_REGLES,
+        "statut_reconciliation": "ecarts_connus", "nombre_scrutins_base": 6,
+    }  # fmt: skip
     return ContexteExport(**(base | sur))
 
 
@@ -312,14 +312,14 @@ def test_ALG_11_base_vide_echec():
 
 def test_ALG_11_flux_non_trie_refuse():
     flux = iter(list(reversed(_lots())))
-    fichiers, r = exporter(flux, REFERENTIELS, _contexte())
+    _fichiers, r = exporter(flux, REFERENTIELS, _contexte())
     assert (r.statut, r.cause_echec) == ("echec", "ordre_invalide")
 
 
 def test_ALG_11_trop_de_fichiers_echec_et_avertissement():
     _, r = _exporter(params=ParametresExport(max_fichiers_echec=10))
     assert (r.statut, r.cause_echec) == ("echec", "trop_de_fichiers")
-    fichiers, r = _exporter(params=ParametresExport(max_fichiers_avertissement=10))
+    _fichiers, r = _exporter(params=ParametresExport(max_fichiers_avertissement=10))
     assert r.statut == "ok" and any(a.startswith("nombre_fichiers_eleve") for a in r.avertissements)
 
 
@@ -593,7 +593,7 @@ def test_ALG_11_archive_complete_chiffres_de_la_fiche(tmp_path):
 
 def test_ALG_11_empreinte_entrees_composite():
     base, _ = _exporter()
-    de = lambda f: _json(f, "manifeste.json")["empreinte_entrees"]  # noqa: E731
+    de = lambda f: _json(f, "manifeste.json")["empreinte_entrees"]
     assert de(base) == de(_exporter()[0])
     # l'archive, la version des algorithmes, celle des règles ou un référentiel la changent
     for sur in (

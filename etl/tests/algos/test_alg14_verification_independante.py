@@ -211,7 +211,7 @@ def test_ALG_14_entrees_illisibles(archive_et_export, tmp_path):
 
 
 def test_ALG_14_export_sans_meta_illisible(archive_et_export, tmp_path):
-    archive, export = archive_et_export
+    archive, _export = archive_et_export
     copie = tmp_path / "out"
     (copie / "scrutins").mkdir(parents=True)
     with pytest.raises(V.ErreurEntree):

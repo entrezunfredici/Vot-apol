@@ -45,20 +45,20 @@ def _manifeste(entrees=ENTREES, donnees=D, scrutins=None):
 
 def _entrees(**sur) -> EntreesDecision:
     """Cas courant : tout est ok, version publiée existante, aucune modification, mode sûr levé."""
-    base = dict(
-        lecture=RapportLecture(statut="complet"),
-        importation=RapportImport(statut="termine"),
-        reconciliation=RapportReconciliation(niveau="base", statut="ecarts_connus"),
-        export=RapportExport(statut="ok", nombre_groupes=13),
-        tests_ok=True,
-        verification="ok",
-        telechargement=RapportTelechargement(statut="nouvelle"),
-        manifeste_courant=_manifeste(donnees="e" * 64),
-        manifeste_precedent=_manifeste(entrees={**ENTREES, "archive_sha256": "z" * 64}),
-        diff={"nouveaux": 12, "nombre_supprimes": 0, "nombre_modifies_chiffres": 0, "nombre_modifies_autres": 0},
-        nombre_groupes_precedent=13,
-        mode_sur=False,
-    )  # fmt: skip
+    base = {
+        "lecture": RapportLecture(statut="complet"),
+        "importation": RapportImport(statut="termine"),
+        "reconciliation": RapportReconciliation(niveau="base", statut="ecarts_connus"),
+        "export": RapportExport(statut="ok", nombre_groupes=13),
+        "tests_ok": True,
+        "verification": "ok",
+        "telechargement": RapportTelechargement(statut="nouvelle"),
+        "manifeste_courant": _manifeste(donnees="e" * 64),
+        "manifeste_precedent": _manifeste(entrees={**ENTREES, "archive_sha256": "z" * 64}),
+        "diff": {"nouveaux": 12, "nombre_supprimes": 0, "nombre_modifies_chiffres": 0, "nombre_modifies_autres": 0},
+        "nombre_groupes_precedent": 13,
+        "mode_sur": False,
+    }  # fmt: skip
     return EntreesDecision(**(base | sur))
 
 
@@ -343,9 +343,9 @@ def _lots():
 
 
 def _contexte(**sur):
-    base = dict(archive_sha256="b" * 64, type_empreinte="fichier", donnees_du="d", version_etl="e",
-                version_regles_classification="r", statut_reconciliation="ecarts_connus",
-                nombre_scrutins_base=6)  # fmt: skip
+    base = {"archive_sha256": "b" * 64, "type_empreinte": "fichier", "donnees_du": "d", "version_etl": "e",
+                "version_regles_classification": "r", "statut_reconciliation": "ecarts_connus",
+                "nombre_scrutins_base": 6}  # fmt: skip
     return ContexteExport(**(base | sur))
 
 
@@ -353,11 +353,11 @@ def test_ALG_12_avec_le_manifeste_exporte_par_alg11():
     fichiers, rapport = exporter(_lots(), ReferentielsExport({}, {}), _contexte())
     assert rapport.statut == "ok"
     manifeste = json.loads(fichiers["manifeste.json"])
-    base = dict(
-        lecture=RapportLecture(statut="complet"), importation=RapportImport(statut="termine"),
-        reconciliation=RapportReconciliation(niveau="base", statut="ecarts_connus"),
-        export=rapport, tests_ok=True, verification="ok", manifeste_courant=manifeste, mode_sur=False,
-    )  # fmt: skip
+    base = {
+        "lecture": RapportLecture(statut="complet"), "importation": RapportImport(statut="termine"),
+        "reconciliation": RapportReconciliation(niveau="base", statut="ecarts_connus"),
+        "export": rapport, "tests_ok": True, "verification": "ok", "manifeste_courant": manifeste, "mode_sur": False,
+    }  # fmt: skip
     # première publication : validation humaine
     d = decider(EntreesDecision(**base))
     assert (d.decision, _ids(d)) == ("attente_validation", ["V01"])

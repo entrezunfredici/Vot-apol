@@ -192,16 +192,16 @@ def test_ALG_08_fichier_de_corrections_reel_valide():
         "pas du json",
         "{}",
         '[{"id": "x"}]',
-        '[{"id": "x", "titre": "t", "categorie": "inconnue", "motif": "m", '
-        '"valide_le": "d", "valide_par": "p"}]',
-        '[{"id": "x", "titre": "t", "categorie": "indetermine", "motif": "m", '
-        '"valide_le": "d", "valide_par": "p"}]',
-        '[{"id": "x", "titre": "", "categorie": "article", "motif": "m", '
-        '"valide_le": "d", "valide_par": "p"}]',
-        '[{"id": "x", "titre": "t", "categorie": "article", "motif": "m", '
+        ('[{"id": "x", "titre": "t", "categorie": "inconnue", "motif": "m", '
+        '"valide_le": "d", "valide_par": "p"}]'),
+        ('[{"id": "x", "titre": "t", "categorie": "indetermine", "motif": "m", '
+        '"valide_le": "d", "valide_par": "p"}]'),
+        ('[{"id": "x", "titre": "", "categorie": "article", "motif": "m", '
+        '"valide_le": "d", "valide_par": "p"}]'),
+        ('[{"id": "x", "titre": "t", "categorie": "article", "motif": "m", '
         '"valide_le": "d", "valide_par": "p"},'
         ' {"id": "x", "titre": "u", "categorie": "article", "motif": "m", '
-        '"valide_le": "d", "valide_par": "p"}]',
+        '"valide_le": "d", "valide_par": "p"}]'),
     ],
 )
 def test_ALG_08_fichier_de_corrections_mal_forme_arret(tmp_path, contenu):

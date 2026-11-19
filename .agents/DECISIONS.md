@@ -181,6 +181,14 @@ Sur plusieurs scrutins : afficher la répartition brute (nombre de scrutins par 
 **Alternative écartée** : laisser les modèles propres dans le module de leur algorithme (mélange données et fonctions pures) ; garder un seul `models.py`.
 **Conséquences** : `from etl.models import X` fonctionne partout, sans changement des imports existants. `etl_version` (ALG-07) est inchangée : elle ne hache que les modules ALG-02, 04 et 06, qui n'ont pas été modifiés. Les modèles d'ALG-11, 12 et 14 iront dans `models/alg11.py`, `alg12.py`, `alg14.py`.
 
+### [2026-11-19] Assemblage de la chaîne : `etl sync`, déploiement en deux travaux
+**Contexte** : ALG-01 à ALG-14 sont codés ; il restait à les enchaîner (téléchargement, référentiels de noms, vérification indépendante, décision) et à décrire le déploiement.
+**Décision** : (1) Commande `etl sync` (`pipeline.run_sync`) : lit l'état publié (`manifeste`, `meta`, `qualite`, `groupes`, `deputes`), télécharge scrutins puis référentiels AMO30 (ALG-13), répond « rien à faire » avant tout traitement si **toutes** les entrées sont identiques, importe dans une base neuve, résout les noms (ALG-09), exporte, lance ALG-14 **dans un processus séparé** (le script n'importe rien de `etl`), puis écrit `decision.json` (ALG-12). (2) L'empreinte composite des entrées contient désormais `referentiels_sha256` (empreinte de l'archive AMO30) : un référentiel modifié fait retraiter une archive inchangée. (3) La base étant reconstruite, ALG-09.8 compare les noms aux fichiers publiés `groupes.json` et `deputes.json`, pas à la base. (4) Référentiels indisponibles ou lecture non complète, état publié illisible, tests en échec : la décision est `bloquer` (G01 ou G05), jamais une publication dégradée ; seul un 404 vaut « première publication ». (5) Déploiement : travail `deploy` distinct, environnement `validation-publication` (un relecteur) si la décision est `attente_validation`, `publication` si `publier` ; `etl autoriser` recalcule `rapport_sha256` et `donnees_sha256` avant de laisser passer ; `etl verifier-deploiement` relit `meta.json` en ligne (ALG-12.9). (6) Restauration : redéployer l'artefact `donnees` d'une exécution antérieure (30 jours).
+**Alternative écartée** : appeler `etl import` / `etl export` séparément depuis le YAML (la logique de décision serait dispersée dans le workflow) ; importer ALG-14 dans le paquet (perdrait son indépendance).
+**Conséquences** : interface publique ajoutée (commandes `sync`, `autoriser`, `verifier-deploiement`) ; `type_empreinte` est maintenant renseigné par `sync` (reste `non_renseigne` pour `etl export` seul). À faire avant la première exécution : variable `VOTEAPOL_URL_PUBLIEE`, secrets Cloudflare, deux environnements GitHub (voir `docs/deployment.md`).
+
+---
+
 ---
 
 ## Décisions en suspens

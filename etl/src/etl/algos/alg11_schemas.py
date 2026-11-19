@@ -316,7 +316,10 @@ def valider(chemin: str, document: Any) -> list[str]:
         return [f"{chemin} : aucun schéma pour ce fichier"]
     erreurs: list[str] = []
     schema.verifier(document, chemin, erreurs)
-    if schema is SCHEMA_GROUPE and isinstance(document, dict):
-        if document.get("colonnes") != list(COLONNES_GROUPE):
-            erreurs.append(f"{chemin}.colonnes : colonnes attendues {list(COLONNES_GROUPE)}")
+    if (
+        schema is SCHEMA_GROUPE
+        and isinstance(document, dict)
+        and document.get("colonnes") != list(COLONNES_GROUPE)
+    ):
+        erreurs.append(f"{chemin}.colonnes : colonnes attendues {list(COLONNES_GROUPE)}")
     return erreurs

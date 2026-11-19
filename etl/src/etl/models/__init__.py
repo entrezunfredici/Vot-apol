@@ -6,7 +6,66 @@ projet et les fichiers `algNN.py` n'importent que `commun.py` et leurs voisins d
 Tout est ré-exporté ici : `from etl.models import X` fonctionne pour tous les modèles.
 """
 
+from .alg02 import (
+    Anomalie,
+    ResultatNormalisation,
+)
+from .alg05 import (
+    Ecart,
+    EcartConnu,
+    GroupeAControler,
+    RapportReconciliation,
+    ScrutinAControler,
+)
+from .alg06 import (
+    CorrectionGroupe,
+)
+from .alg07 import (
+    AncienScrutin,
+    Depot,
+    RapportImport,
+    ScrutinRefuse,
+)
+from .alg08 import (
+    CATEGORIES,
+    Classification,
+    CorrectionTitre,
+)
+from .alg09 import (
+    NomDepute,
+    NomGroupe,
+    RapportResolution,
+    ResolutionNoms,
+)
+from .alg10 import (
+    ComparaisonGroupes,
+    IndicateursGroupe,
+    LigneGroupeScrutin,
+    LigneVoteSelection,
+    ScrutinCompare,
+)
+from .alg11 import (
+    ContexteExport,
+    ParametresExport,
+    RapportExport,
+    ReferentielsExport,
+)
+from .alg12 import (
+    DecisionPublication,
+    EntreesDecision,
+    ParametresDecision,
+)
+from .alg13 import (
+    MIO,
+    Parametres,
+    RapportTelechargement,
+    Reponse,
+    Stockage,
+    Temporaire,
+    Transport,
+)
 from .commun import (
+    POSITIONS_VOTE,
     Comptages,
     EntreeAcceptee,
     EntreeRefusee,
@@ -18,92 +77,31 @@ from .commun import (
     LigneTotaux,
     LigneVote,
     LotScrutin,
-    POSITIONS_VOTE,
     PositionMajoritaire,
     RapportLecture,
     ScrutinNormalise,
     Votant,
-)  # noqa: F401
-from .alg02 import (
-    Anomalie,
-    ResultatNormalisation,
-)  # noqa: F401
-from .alg05 import (
-    Ecart,
-    EcartConnu,
-    GroupeAControler,
-    RapportReconciliation,
-    ScrutinAControler,
-)  # noqa: F401
-from .alg06 import (
-    CorrectionGroupe,
-)  # noqa: F401
-from .alg07 import (
-    AncienScrutin,
-    Depot,
-    RapportImport,
-    ScrutinRefuse,
-)  # noqa: F401
-from .alg08 import (
-    CATEGORIES,
-    Classification,
-    CorrectionTitre,
-)  # noqa: F401
-from .alg09 import (
-    NomDepute,
-    NomGroupe,
-    RapportResolution,
-    ResolutionNoms,
-)  # noqa: F401
-from .alg10 import (
-    ComparaisonGroupes,
-    IndicateursGroupe,
-    LigneGroupeScrutin,
-    LigneVoteSelection,
-    ScrutinCompare,
-)  # noqa: F401
-from .alg11 import (
-    ContexteExport,
-    ParametresExport,
-    RapportExport,
-    ReferentielsExport,
-)  # noqa: F401
-from .alg12 import (
-    DecisionPublication,
-    EntreesDecision,
-    ParametresDecision,
-)  # noqa: F401
-from .alg13 import (
-    MIO,
-    Parametres,
-    RapportTelechargement,
-    Reponse,
-    Stockage,
-    Temporaire,
-    Transport,
-)  # noqa: F401
+)
 
 __all__ = [
-    "DecisionPublication",
-    "EntreesDecision",
-    "ParametresDecision",
-    "ContexteExport",
-    "ParametresExport",
-    "RapportExport",
-    "ReferentielsExport",
+    "CATEGORIES",
+    "MIO",
+    "POSITIONS_VOTE",
     "AncienScrutin",
     "Anomalie",
-    "CATEGORIES",
     "Classification",
     "ComparaisonGroupes",
     "Comptages",
+    "ContexteExport",
     "CorrectionGroupe",
     "CorrectionTitre",
+    "DecisionPublication",
     "Depot",
     "Ecart",
     "EcartConnu",
     "EntreeAcceptee",
     "EntreeRefusee",
+    "EntreesDecision",
     "GroupeAControler",
     "GroupeNormalise",
     "IndicateursGroupe",
@@ -116,17 +114,19 @@ __all__ = [
     "LigneVote",
     "LigneVoteSelection",
     "LotScrutin",
-    "MIO",
     "NomDepute",
     "NomGroupe",
-    "POSITIONS_VOTE",
     "Parametres",
+    "ParametresDecision",
+    "ParametresExport",
     "PositionMajoritaire",
+    "RapportExport",
     "RapportImport",
     "RapportLecture",
     "RapportReconciliation",
     "RapportResolution",
     "RapportTelechargement",
+    "ReferentielsExport",
     "Reponse",
     "ResolutionNoms",
     "ResultatNormalisation",

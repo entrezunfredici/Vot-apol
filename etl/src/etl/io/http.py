@@ -6,13 +6,13 @@ redirections (c'est ALG-13 qui les contrôle une à une).
 """
 
 import http.client
-import socket
+import json
 import ssl
 from collections.abc import Iterator
 from urllib.parse import urlsplit
 
 from ..algos.alg13_telechargement import ErreurReseau
-from ..models import Parametres
+from ..models import Parametres, Transport
 
 
 class ReponseHttp:
@@ -28,7 +28,7 @@ class ReponseHttp:
         while True:
             try:
                 bloc = self._reponse.read(taille)
-            except socket.timeout as exc:
+            except TimeoutError as exc:
                 raise ErreurReseau("delai", "inactivité") from exc
             except (http.client.HTTPException, OSError) as exc:
                 raise ErreurReseau("coupure", str(exc)) from exc
@@ -66,7 +66,7 @@ class TransportHttp:
                 headers={"User-Agent": params.user_agent, "Accept-Encoding": "identity"},
             )
             reponse = conn.getresponse()
-        except socket.timeout as exc:
+        except TimeoutError as exc:
             conn.close()
             raise ErreurReseau("delai", str(exc)) from exc
         except ssl.SSLError as exc:
@@ -76,3 +76,35 @@ class TransportHttp:
             conn.close()
             raise ErreurReseau("connexion", str(exc)) from exc
         return ReponseHttp(conn, reponse)
+
+
+MAX_OCTETS_JSON_PUBLIE = 25 * 1024 * 1024  # limite de l'hébergement : aucun fichier publié ne la dépasse
+
+
+def lire_json_publie(transport: Transport, url: str, params: Parametres) -> dict | None:
+    """Lit un fichier JSON de la version publiée ; `None` si l'adresse répond 404.
+
+    Une première publication n'a aucun fichier : le 404 n'est pas une erreur. Toute autre anomalie
+    (code, coupure, contenu qui n'est pas un objet JSON) lève `ErreurReseau` : on ne devine jamais
+    qu'il n'y a « rien de publié ». Aucune redirection n'est suivie.
+    """
+    reponse = transport.get(url, params)
+    try:
+        if reponse.code == 404:
+            return None
+        if reponse.code != 200:
+            raise ErreurReseau("http_erreur", f"{url} : code {reponse.code}")
+        octets = b""
+        for bloc in reponse.lire_blocs(params.taille_bloc):
+            octets += bloc
+            if len(octets) > MAX_OCTETS_JSON_PUBLIE:
+                raise ErreurReseau("trop_gros", url)
+    finally:
+        reponse.fermer()
+    try:
+        contenu = json.loads(octets.decode("utf-8"))
+    except ValueError as exc:
+        raise ErreurReseau("contenu", f"{url} : JSON illisible") from exc
+    if not isinstance(contenu, dict):
+        raise ErreurReseau("contenu", f"{url} : un objet JSON est attendu")
+    return contenu

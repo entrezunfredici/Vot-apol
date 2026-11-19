@@ -273,7 +273,7 @@ def _cumuler(cumuls: _Cumuls, lot: LotScrutin, document: dict, classification, s
             "resultat": s.resultat_code,
             "totaux": {k: document["totaux"][k] for k in (
                 "pour", "contre", "abstentions", "non_votants", "suffrages_exprimes",
-                "nombre_votants")},  # fmt: skip
+                "nombre_votants")},
         }
     )
     octets = serialiser(document)
@@ -301,7 +301,7 @@ def _cumuler(cumuls: _Cumuls, lot: LotScrutin, document: dict, classification, s
         cumuls.lignes_stats.append(
             LigneGroupeScrutin(s.id, s.date_scrutin, cat, s.resultat_code, s.type_vote_code,
                                g.groupe_id, g.membres, g.pour, g.contre, g.abstentions,
-                               g.non_votants)  # fmt: skip
+                               g.non_votants)
         )
     cumuls.votes_stats.extend(
         LigneVoteSelection(s.id, v.groupe_id, v.depute_id, v.position) for v in lot.votes

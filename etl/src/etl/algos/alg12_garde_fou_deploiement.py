@@ -13,7 +13,6 @@ from ..models import DecisionPublication, EntreesDecision, ParametresDecision
 from .alg11_export_statique import empreinte_entrees, serialiser
 
 
-
 def _sha256(octets: bytes) -> str:
     return hashlib.sha256(octets).hexdigest()
 

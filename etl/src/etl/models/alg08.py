@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 
-
 CATEGORIES = (
     "texte_ensemble",
     "article",

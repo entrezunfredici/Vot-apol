@@ -73,8 +73,8 @@ def test_ALG_10_cas_unanime_et_bornes_incluses():
 def test_ALG_10_premiere_tranche_toujours_vide_avec_bornes_par_defaut():
     # une position majoritaire stricte a m > E/3 : aucune part inférieure à 33,4 %
     for p in range(1, 40):
-        for c in range(0, 40):
-            for a in range(0, 40):
+        for c in range(40):
+            for a in range(40):
                 e = p + c + a
                 m = max(p, c, a)
                 if [p, c, a].count(m) == 1:
@@ -227,7 +227,7 @@ def test_ALG_10_archive_complete_invariants_et_constats():
             lignes.append(
                 LigneGroupeScrutin(s.id, s.date_scrutin, "x", s.sort_code, s.type_vote_code,
                                    g.organe_ref, g.membres, g.pour, g.contre, g.abstentions,
-                                   g.non_votants)  # fmt: skip
+                                   g.non_votants)
             )
             votes.extend(LigneVoteSelection(s.id, g.organe_ref, v.acteur_ref, v.position)
                          for v in g.votants)  # fmt: skip

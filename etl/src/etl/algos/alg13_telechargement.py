@@ -60,9 +60,7 @@ def url_autorisee(url: str, hotes_autorises: list[str], autoriser_http_local: bo
         return False
     if u.username is not None or u.password is not None or not hote:
         return False
-    if u.scheme == "https":
-        pass
-    elif u.scheme == "http" and autoriser_http_local and hote in ("127.0.0.1", "localhost"):
+    if u.scheme == "https" or u.scheme == "http" and autoriser_http_local and hote in ("127.0.0.1", "localhost"):
         pass
     else:
         return False
@@ -194,7 +192,7 @@ def _lire_empreinte_publiee(
 def _age_en_jours(last_modified: str, telechargee_le: str) -> float | None:
     try:
         modifie = parsedate_to_datetime(last_modified)
-        reference = datetime.fromisoformat(telechargee_le.replace("Z", "+00:00"))
+        reference = datetime.fromisoformat(telechargee_le)
     except (TypeError, ValueError):
         return None
     if modifie.tzinfo is None:

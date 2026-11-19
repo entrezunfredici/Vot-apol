@@ -8,6 +8,7 @@ Chaque bloc de code est précédé de « # ALG-10.k : <résumé> ».
 
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
+from itertools import pairwise
 
 from ..models import (
     ComparaisonGroupes,
@@ -33,7 +34,7 @@ def valider_bornes(bornes: Sequence[int]) -> tuple[int, ...]:
     ok = (
         len(bornes) > 0
         and all(isinstance(b, int) and not isinstance(b, bool) and 1 <= b <= 99 for b in bornes)
-        and all(x < y for x, y in zip(bornes, bornes[1:], strict=False))
+        and all(x < y for x, y in pairwise(bornes))
     )
     if not ok:
         raise ErreurParametre(f"bornes invalides : {list(bornes)!r}")

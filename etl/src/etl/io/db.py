@@ -412,7 +412,7 @@ def lire_scrutins_export(conn: sqlite3.Connection) -> Iterator[LotScrutin]:
                 LigneMiseAuPoint(
                     sid, r[0], r[1], r[2], r[3], r[4], r[5], r[6],
                     "rattachee" if rattachee else "introuvable", effet,
-                )  # fmt: skip
+                )
             )
         par_scrutin = dict.fromkeys(POSITIONS_VOTE, 0)
         par_groupe: dict[int, dict[str, int]] = {g.rang: dict.fromkeys(POSITIONS_VOTE, 0) for g in groupes}
