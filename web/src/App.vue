@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import { L } from './lexique'
+import { RouterView } from 'vue-router'
+import AppFooter from './components/AppFooter.vue'
+import AppHeader from './components/AppHeader.vue'
 </script>
 
 <template>
-  <header class="border-b p-4">
-    <nav class="flex gap-4">
-      <RouterLink to="/">{{ L.nav.accueil }}</RouterLink>
-      <RouterLink to="/scrutins">{{ L.nav.scrutins }}</RouterLink>
-      <RouterLink to="/comparateur">{{ L.nav.comparateur }}</RouterLink>
-      <RouterLink to="/methodologie">{{ L.nav.methodologie }}</RouterLink>
-    </nav>
-  </header>
-  <main class="p-4"><RouterView /></main>
+  <div class="flex min-h-screen flex-col">
+    <AppHeader />
+    <main
+      id="contenu"
+      class="flex-1"
+    >
+      <RouterView />
+    </main>
+    <AppFooter />
+  </div>
 </template>

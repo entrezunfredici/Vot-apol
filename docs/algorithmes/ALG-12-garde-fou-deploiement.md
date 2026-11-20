@@ -6,7 +6,7 @@ Décider, à partir des rapports des étapes précédentes et d'une comparaison 
 
 ## Périmètre
 Inclus : comparaison avec la version publiée, règles de décision, seuils, mode sûr, lien entre validation et artefact, restauration.
-Exclus : détail des contrôles (ALG-01, 05, 07, 11, 13), commandes `wrangler`, contenu du workflow GitHub Actions (`sync.yml`, à décrire dans la documentation de déploiement), vérification indépendante sur fichiers bruts (ALG-14 proposé).
+Exclus : détail des contrôles (ALG-01, 05, 07, 11, 13), commandes `wrangler`, contenu du workflow GitHub Actions (`sync.yml`, décrit dans `docs/deployment.md`), vérification indépendante sur fichiers bruts (ALG-14).
 
 ## Principes
 - **Construire une fois, déployer ce qui a été validé** : le répertoire exporté est un artefact de l'exécution ; le déploiement publie cet artefact, jamais un recalcul.
@@ -133,7 +133,7 @@ Propriétés : une règle B vraie impose `bloquer` quelles que soient les autres
 | 10 | Échec à n'importe quelle étape : conserver les journaux, ne rien déployer, laisser la version publiée telle quelle | Cahier §10, point 6 |
 
 ## Restauration
-La version publiée précédente doit pouvoir être redéployée sans reconstruction : conserver pour chaque publication l'artefact (ou la révision du code et l'empreinte de l'archive) pendant une durée à fixer. La procédure exacte (redéploiement de l'artefact précédent, ou fonction de retour arrière de la plateforme) sera décrite dans `docs/deployment.md`. **À vérifier dans la documentation de Cloudflare avant le premier déploiement** : ce que la plateforme conserve et sa durée.
+La version publiée précédente doit pouvoir être redéployée sans reconstruction : conserver pour chaque publication l'artefact (ou la révision du code et l'empreinte de l'archive) pendant 30 jours. La procédure (redéploiement de l'artefact d'une exécution antérieure) est décrite dans `docs/deployment.md`. **À vérifier dans la documentation de Cloudflare avant le premier déploiement** : ce que la plateforme conserve et sa durée.
 
 ## Cas limites et erreurs
 | Cas | Résultat attendu | Pourquoi |
@@ -167,7 +167,7 @@ Tests sur des rapports construits (aucune donnée parlementaire n'est produite) 
 - **Deux appels.** `doit_traiter(entrees_courantes, manifeste_publie, forcer)` répond à l'étape 1 *avant* de télécharger et d'importer (cahier §10) ; `decider(...)` est appelé après l'export et refait le test d'étape 1 sur `manifeste.json`. Les deux utilisent `empreinte_entrees` (ALG-11), qui couvre l'archive, `version_etl`, `versions_algorithmes` (empreinte du code d'ALG-02, 03, 04, 06, 08, 09, 10, 11 et des schémas d'export), la version des règles de classification et, quand ils sont connus, les empreintes des référentiels.
 - `decision.json` contient `decision`, `raisons`, `diff`, `donnees_sha256`, `empreinte_entrees` et `rapport_sha256` (SHA-256 des cinq premiers champs) : c'est l'empreinte qui relie une approbation à un artefact précis.
 - `deploiement_autorise(decision, approuvee, rapport_sha256_artefact)` n'autorise que l'artefact décidé (`publier`, ou `attente_validation` approuvée) ; `bloquer` et `rien_a_faire` n'autorisent jamais. `verifier_deploiement(meta_en_ligne, archive_sha256, nombre_scrutins)` fait l'étape 9.
-- Non couvert ici : le workflow GitHub Actions et la commande qui assemble les rapports (`sync`), qui relèvent de la documentation de déploiement.
+- Hors de cette fiche : le workflow GitHub Actions et la commande qui assemble les rapports (`etl sync`, `etl autoriser`, `etl verifier-deploiement`, code dans `pipeline.py`), décrits dans `docs/deployment.md`.
 
 ## Décisions (2026-11-14 et 2026-11-18) : toutes les questions sont tranchées
 1. Seuils `SEUIL_MODIFIES = 20` et `SEUIL_NOUVEAUX = 500` conservés au départ, à recaler après quelques semaines de synchronisation.
@@ -183,4 +183,5 @@ Cahier technique §10 et §11 ; `docs/methodology.md` (garanties 2, 4, 5, 6) ; `
 ## Historique
 - v1 (2026-11-03) : première rédaction.
 - v2 (2026-11-18) : questions tranchées ; règle G06 (ALG-14) ajoutée ; statut « Validé ».
+- 2026-11-19 : mise à jour rédactionnelle (périmètre, durée de conservation, renvoi vers `docs/deployment.md`) ; aucune règle modifiée, version inchangée.
 - 2026-11-18 : code et tests écrits ; précisions à l'implémentation (G02 plus stricte, `doit_traiter`, `decision.json`).

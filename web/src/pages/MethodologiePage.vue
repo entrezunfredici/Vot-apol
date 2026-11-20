@@ -1,3 +1,8 @@
+<script setup lang="ts">
+import PagePrevue from '../components/PagePrevue.vue'
+import { L } from '../lexique'
+</script>
+
 <template>
-  <h1 class="text-2xl font-bold">Méthodologie</h1>
+  <PagePrevue :titre="L.nav.methodologie" />
 </template>
