@@ -3,3 +3,4 @@
 export { creerRecherche } from './minisearch'
 export type { Recherche } from './minisearch'
 export * from './filtres'
+export * from './comparaison'

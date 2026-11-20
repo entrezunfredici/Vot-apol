@@ -194,3 +194,31 @@
 **Ce qui n'est PAS couvert** : les 6 pages ci-dessus ; filtre par groupe politique (absent de l'index) et par sujet (écart n° 3 de la revue) ; mode sombre (bouton de la maquette non repris) ; aucun test de composant (Vitest en environnement node : logique pure seulement) ; parcours clavier et lecteur d'écran non testés avec les outils dédiés ; rendu Safari et Firefox non vérifié.
 
 **Points d'attention** : (1) `suffrages_exprimes` de la source = pour + contre : les pourcentages de la fiche portent sur les positions exprimées (pour + contre + abstentions, comme les groupes) et le chiffre officiel est affiché à part (la maquette mélangeait les deux). (2) `--color-ink-3` relevé de `#8A93A3` à `#6b7482` (contraste 4,5:1 exigé par les conventions). (3) Vitest 5.1.0 échoue ici avec le pool par défaut (« Cannot read properties of undefined (reading 'config') », même sur un test trivial) : `pool: 'vmThreads'` dans `vite.config.ts` ; à confirmer en CI. (4) Les causes de non-vote ne sont pas affichées quand la liste nominative dépasse le total officiel (écart connu du scrutin n° 1). (5) Titre officiel affiché avec une majuscule initiale (la source le formule à la suite de « Scrutin sur »). (6) `web/public/data/v1` est généré (ignoré par Git) : `etl` l'alimente en local, le workflow le fournit en CI.
+
+### 2026-11-20 — Front, tranche 2 : Groupes et Fiche groupe
+
+**Ce qui a été fait** (`web/`) : `data/types.ts` (format compact de `groupes/<id>.json`, `stats.json`), `data/groupe.ts` (`lireLignesGroupe` : vérifie les colonnes du contrat avant de mettre les lignes à plat, sinon erreur), chargeurs `chargerGroupe` et `chargerStatsGroupes`, section `groupes` du lexique. Page **Groupes** : cartes en ordre alphabétique annoncé, sans couleur par groupe, nombre de scrutins et de personnes avec un vote (le chiffre de `stats.json` n'est jamais bloquant). Page **Fiche groupe** : indicateurs (scrutins, période, effectif au dernier scrutin), répartition brute des scrutins par position majoritaire en « n sur N » (égalité et aucun vote exprimé séparés), historique filtrable par nature et position, paginé, état dans l'adresse, lien vers chaque scrutin.
+
+**Vérifié** : `vue-tsc`, `eslint`, `vitest` (27 tests dont 3 nouveaux), `vite build` réussis.
+
+**Ce qui n'est PAS couvert** : rendu non vérifié dans un navigateur (captures à faire) ; pages Comparateur, Statistiques, Méthodologie, Qualité toujours « arrive bientôt » ; titre du scrutin absent de l'historique (le fichier de groupe ne le porte pas) ; filtre par période.
+
+**Points d'attention** : la répartition est calculée dans le navigateur à partir de l'historique, pas lue dans `stats.json` ; les deux doivent concorder (à vérifier).
+
+### 2026-11-20 — Front, tranche 3 : Statistiques
+
+**Ce qui a été fait** (`web/`) : page **Statistiques** lue dans `stats.json` : sélecteur de sélection (tous les scrutins, par nature, par année) mémorisé dans l'adresse, nombre de scrutins retenu et filtre appliqué affichés ; trois tableaux par groupe en ordre alphabétique (effectifs en membres-scrutins avec non-votants et sans vote enregistré séparés ; scrutins par position majoritaire « n sur N » ; scrutins par tranche de part de la position majoritaire, en nombre de scrutins, sans moyenne). Avertissement : les scrutins ne sont pas des lois distinctes. Chargeur `chargerStats`, section `stats` du lexique.
+
+**Vérifié** : `vue-tsc`, `eslint`, `vitest` (27) réussis. **Non vérifié** : rendu navigateur ; `vite build` non relancé.
+
+**Ce qui n'est PAS couvert** : graphiques chronologiques (P2) ; Comparateur, Méthodologie, Qualité (« arrive bientôt »).
+
+### 2026-11-20 — Front, tranche 4 : Qualité, Méthodologie, Comparateur (toutes les pages P1/P2 existent)
+
+**Ce qui a été fait** (`web/`) : **Qualité** (`qualite.json` : statut de réconciliation, écarts connus de la source avec leur motif et lien vers le scrutin, nature à vérifier, noms non résolus, modifications depuis la publication précédente ; `nouveaux` est un nombre dans le contrat, pas une liste). **Méthodologie** : contenu repris de `docs/methodology.md` dans le lexique (sommaire, définitions, garanties, cas limites, lien de signalement vers les issues du dépôt). **Comparateur** : 2 ou 3 groupes (état dans l'adresse), scrutins communs classés « même position majoritaire » / « positions différentes » / « sans position pour au moins un groupe » (jamais rangé dans les deux premiers), résumé « n sur N », liste filtrable et paginée avec titre, position, `m sur E` et participation de chaque groupe. Logique pure dans `search/comparaison.ts` (3 tests).
+
+**Vérifié** : `vue-tsc`, `eslint`, `vitest` (30), `vite build` réussis. **Non vérifié** : rendu navigateur de toutes les pages de la tranche 2 à 4.
+
+**Ce qui n'est PAS couvert** : graphiques chronologiques, filtre par groupe sur la liste des scrutins et par sujet, mode sombre, tests de composants, parcours clavier / lecteur d'écran, Safari et Firefox.
+
+**Points d'attention** : le texte de la Méthodologie est une copie de `docs/methodology.md` : à resynchroniser si le document change ; le lien de signalement suppose que les issues GitHub sont activées.

@@ -1,6 +1,7 @@
 Scrutins.json
 # Données et artefacts générés
-data/
+/data/
+web/public/data/
 dist-data/
 *.sqlite
 *.zip
