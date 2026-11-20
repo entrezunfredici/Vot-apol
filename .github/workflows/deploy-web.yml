@@ -1,0 +1,84 @@
+name: Déploiement du front
+
+# Publie une nouvelle version du site (code du front) en reprenant les données DÉJÀ en ligne :
+# un déploiement Cloudflare remplace tous les fichiers, il faut donc rejouer `/data/v1/`.
+# Les données ne sont jamais recalculées ici : elles sont téléchargées depuis le site publié, puis
+# vérifiées par empreinte (scripts/recuperer_donnees_publiees.py). La mise à jour des données reste
+# le travail de `sync.yml` (décision ALG-12, validation humaine). Voir docs/deployment.md.
+#
+# Réglages (les mêmes que sync.yml) : variable VOTEAPOL_URL_PUBLIEE, secrets CLOUDFLARE_API_TOKEN
+# et CLOUDFLARE_ACCOUNT_ID, environnement `publication`.
+# Première publication : rien n'est en ligne, ce workflow échoue (404) ; lancer `sync.yml` d'abord.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "scripts/recuperer_donnees_publiees.py"
+      - "scripts/check_deploy_limits.py"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch:
+
+# Même groupe que sync.yml : jamais deux déploiements en même temps (le plus récent ne doit pas
+# être écrasé par un autre qui aurait lu des données plus anciennes).
+concurrency:
+  group: deploiement
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: publication
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      VOTEAPOL_URL_PUBLIEE: ${{ vars.VOTEAPOL_URL_PUBLIEE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
+
+      - name: Adresse des données publiées
+        run: |
+          if [ -z "$VOTEAPOL_URL_PUBLIEE" ]; then
+            echo "La variable VOTEAPOL_URL_PUBLIEE n'est pas définie : rien à reprendre." >&2
+            exit 1
+          fi
+
+      - name: Contrôles du front
+        working-directory: web
+        run: |
+          npm ci
+          npm run lint
+          npm test
+
+      # Refus (code 1) si un fichier manque ou si l'empreinte ne correspond pas au manifeste.
+      - name: Récupération et vérification des données en ligne
+        run: python3 scripts/recuperer_donnees_publiees.py "$VOTEAPOL_URL_PUBLIEE" travail/data/v1
+
+      - name: Build du site
+        working-directory: web
+        run: |
+          npm run build
+          mkdir -p dist/data
+          cp -r ../travail/data/v1 dist/data/v1
+
+      - name: Limites Cloudflare (< 20 000 fichiers, < 25 Mo par fichier)
+        run: python3 scripts/check_deploy_limits.py web/dist
+
+      - name: Déploiement
+        working-directory: web
+        run: npx --yes wrangler@4 deploy
+
+      # Les données en ligne doivent être exactement celles reprises (on ne suppose pas le succès).
+      - name: Confirmation en ligne
+        working-directory: etl
+        run: |
+          uv sync --quiet
+          uv run python -m etl verifier-deploiement --url-publiee "$VOTEAPOL_URL_PUBLIEE" --data ../travail/data/v1

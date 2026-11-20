@@ -21,7 +21,7 @@ on:
         default: false
 
 concurrency:
-  group: sync
+  group: deploiement
   cancel-in-progress: false
 
 permissions:

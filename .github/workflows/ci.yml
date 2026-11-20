@@ -2,6 +2,15 @@ name: CI
 on:
   push:
   pull_request:
+
+permissions:
+  contents: read
+
+# Une nouvelle poussée annule le contrôle en cours de la même branche.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   etl:
     runs-on: ubuntu-latest

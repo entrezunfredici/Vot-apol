@@ -222,3 +222,11 @@
 **Ce qui n'est PAS couvert** : graphiques chronologiques, filtre par groupe sur la liste des scrutins et par sujet, mode sombre, tests de composants, parcours clavier / lecteur d'écran, Safari et Firefox.
 
 **Points d'attention** : le texte de la Méthodologie est une copie de `docs/methodology.md` : à resynchroniser si le document change ; le lien de signalement suppose que les issues GitHub sont activées.
+
+### 2026-11-20 — Déploiement du front seul (`deploy-web.yml`)
+
+**Ce qui a été fait** : `.github/workflows/deploy-web.yml` (poussée sur `main` touchant `web/`, ou manuel) : tests du front, reprise des données en ligne, build, limites, `wrangler deploy`, confirmation. `scripts/recuperer_donnees_publiees.py` (bibliothèque standard) : télécharge `/data/v1/`, recalcule `donnees_sha256` (règle ALG-11) et le compare au manifeste, refuse https absent, 404, schéma inattendu, fichier altéré. Tests `etl/tests/test_recuperer_donnees_publiees.py` (4) sur un export réel servi en HTTP local. `sync.yml` : groupe de concurrence renommé `deploiement` (partagé). `ci.yml` : droits en lecture, annulation des exécutions obsolètes. `docs/deployment.md` mis à jour. `.gitignore` : `/data/` et `web/public/data/` (l'ancienne règle `data/` ignorait `web/src/data/`).
+
+**Vérifié** : 4 tests réussis, `ruff check .` propre. **Non vérifié** : aucune exécution réelle du workflow ni de `wrangler deploy` ; durée du téléchargement de ~10 000 fichiers (16 en parallèle) non mesurée ; comportement du repli SPA de Cloudflare sur un `fetch` (doc : seules les navigations reçoivent `index.html`).
+
+**Points d'attention** : la reprise suppose que le site en ligne a été publié par `sync.yml` (manifeste présent) ; si le schéma de données change (`v2`), le front et les données doivent évoluer ensemble, donc par `sync.yml`.

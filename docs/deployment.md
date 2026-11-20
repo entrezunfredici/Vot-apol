@@ -58,6 +58,24 @@ validation.
    `rapport_sha256` de la décision relie l'approbation à un état précis, et `etl autoriser` recalcule
    les empreintes des fichiers à déployer avant d'autoriser.
 
+## Déployer le front seul (`deploy-web.yml`)
+
+Un déploiement Cloudflare remplace tous les fichiers du site : publier une nouvelle version du code
+du front exige de rejouer les données. Le workflow `deploy-web.yml` (poussée sur `main` touchant `web/`,
+ou lancement manuel) les **reprend depuis le site en ligne** au lieu de les recalculer :
+
+1. tests du front ;
+2. `scripts/recuperer_donnees_publiees.py` télécharge `/data/v1/` (liste déduite de `scrutins-index.json`,
+   `manifeste.json` et `groupes.json`), recalcule `donnees_sha256` et le compare au manifeste : un fichier
+   manquant, altéré ou mélangé entre deux publications est refusé ;
+3. build, contrôle des limites, `wrangler deploy`, puis `etl verifier-deploiement` ;
+4. les données ne sont jamais modifiées : leur mise à jour reste le travail de `sync.yml` (décision ALG-12,
+   validation humaine).
+
+Ce workflow et `sync.yml` partagent le groupe de concurrence `deploiement` : jamais deux déploiements
+en même temps. Il échoue tant qu'aucune version n'est publiée (404 sur `meta.json`) : lancer `sync.yml`
+d'abord. Il n'utilise que les réglages déjà listés ci-dessus (variable `VOTEAPOL_URL_PUBLIEE` obligatoire).
+
 ## Commandes
 
 ```text
